@@ -20,3 +20,9 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
+spl-token = { version = "3.2.0", features = ["no-entrypoint"] }
+mpl-token-metadata = { version = "1.2.5", features = ["no-entrypoint"] }
+spl-associated-token-account = { version = "1.0.3", features = [
+    "no-entrypoint",
+] }
