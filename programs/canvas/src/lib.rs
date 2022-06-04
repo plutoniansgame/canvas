@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
+use anchor_spl::token::{Mint, Token, TokenAccount};
 
 declare_id!("JA7XU4JeTBraEuVthAMRgg2LFc5oBTGfXxuDm1rPzZCZ");
 
@@ -125,6 +125,10 @@ pub mod canvas {
         canvas.name = name;
         canvas.bump = bump;
 
+        Ok(())
+    }
+
+    pub fn add_token_to_canvas_slot(ctx: Context<AddTokenToCanvasSlot>) -> Result<()> {
         Ok(())
     }
 }
@@ -311,6 +315,51 @@ pub struct CreateCanvas<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(slot_index: u8)]
+pub struct AddTokenToCanvasSlot<'info> {
+    #[account(
+        seeds = [
+            b"canvas",
+            creator.key().as_ref(),
+            canvas_model.key().as_ref(),
+            canvas.name.as_ref(),
+        ],
+        bump,
+        has_one = canvas_model,
+        has_one = creator
+    )
+    ]
+    canvas: Account<'info, Canvas>,
+    #[account(
+        seeds = [
+            b"canvas_model", 
+            creator.key().as_ref(),
+            canvas_model.name.as_ref(),
+            canvas_model.collection_mint.as_ref()
+        ],
+        bump
+    )]
+    canvas_model: Account<'info, CanvasModel>,
+    #[account(
+        seeds = [
+            b"canvas_model_slot",
+            creator.key().as_ref(),
+            canvas_model.key().as_ref(),
+            canvas_model.name.as_ref(),
+            &[slot_index]
+        ],
+        bump,
+        has_one = canvas_model
+    )]
+    canvas_model_slot: Account<'info, CanvasModelSlot>,
+    mint: Account<'info, Mint>,
+    token_account: Account<'info, TokenAccount>,
+    canvas_slot_token_account: Account<'info, TokenAccount>,
+    creator: Signer<'info>,
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, System>,
+}
 // State Accounts
 #[account]
 pub struct CanvasModel {
