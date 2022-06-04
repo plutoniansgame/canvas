@@ -111,6 +111,22 @@ pub mod canvas {
 
         Ok(())
     }
+
+    pub fn create_canvas(ctx: Context<CreateCanvas>, name: String, bump: u8) -> Result<()> {
+        if name.len() > NAME_LENGTH {
+            return Err(ErrorCode::NameTooLong.into());
+        }
+        let canvas_model = &ctx.accounts.canvas_model;
+        let canvas = &mut ctx.accounts.canvas;
+        let creator = &ctx.accounts.creator;
+
+        canvas.canvas_model = canvas_model.key();
+        canvas.creator = creator.key();
+        canvas.name = name;
+        canvas.bump = bump;
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -264,6 +280,37 @@ pub struct CreateCanvasModelSlotMintAssociation<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(name: String)]
+pub struct CreateCanvas<'info> {
+    #[account(
+        seeds = [
+            b"canvas_model",
+            creator.key().as_ref(),
+            canvas_model.name.as_ref(),
+            canvas_model.collection_mint.as_ref()
+        ],
+        bump
+    )]
+    pub canvas_model: Account<'info, CanvasModel>,
+    #[account(
+        init,
+        space = Canvas::LENGTH,
+        payer = creator,
+        seeds = [
+            b"canvas",
+            creator.key().as_ref(),
+            canvas_model.key().as_ref(),
+            name.as_ref()
+        ],
+        bump
+    )]
+    pub canvas: Account<'info, Canvas>,
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
 // State Accounts
 #[account]
 pub struct CanvasModel {
@@ -303,7 +350,15 @@ impl CanvasModelSlot {
 
 #[account]
 pub struct Canvas {
+    name: String,
     canvas_model: Pubkey,
+    creator: Pubkey,
+    bump: u8,
+}
+
+impl Canvas {
+    const LENGTH: usize =
+        DISCRIMINATOR_LENGTH + NAME_LENGTH + PUBLIC_KEY_LENGTH + PUBLIC_KEY_LENGTH;
 }
 
 #[account]
