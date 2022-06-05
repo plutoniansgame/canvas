@@ -11,6 +11,8 @@ const BOOL_LENGTH: usize = 1;
 
 #[program]
 pub mod canvas {
+    use anchor_spl::token::{transfer, Transfer};
+
     use super::*;
 
     pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
@@ -128,8 +130,35 @@ pub mod canvas {
         Ok(())
     }
 
-    pub fn add_token_to_canvas_slot(ctx: Context<AddTokenToCanvasSlot>) -> Result<()> {
-        Ok(())
+    pub fn transfer_token_to_canvas(ctx: Context<TransferTokenToCanvas>) -> Result<()> {
+        let creator = &ctx.accounts.creator;
+        let _canvas = &ctx.accounts.canvas;
+        let _canvas_model = &ctx.accounts.canvas_model;
+        let _canvas_model_slot = &ctx.accounts.canvas_model_slot;
+        let token_account = &mut ctx.accounts.token_account;
+        let cs_token_account = &mut ctx.accounts.canvas_slot_token_account;
+        let token_program = &ctx.accounts.token_program;
+
+        if token_account.amount != 1 {
+            msg!("users token account balance must equal 1");
+            return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
+        }
+
+        if cs_token_account.amount != 0 {
+            msg!("program token account balance must equal 0");
+            return Err(ErrorCode::InvalidProgramTokenAccountBalance.into());
+        }
+
+        let cpi_context = CpiContext::new(
+            token_program.to_account_info(),
+            Transfer {
+                from: token_account.to_account_info(),
+                to: cs_token_account.to_account_info(),
+                authority: creator.to_account_info(),
+            },
+        );
+
+        transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 }
 
@@ -202,7 +231,7 @@ pub struct CreateCanvasModelSlot<'info> {
         bump
     )]
     pub canvas_model_slot: Account<'info, CanvasModelSlot>,
-    pub collection_mint: Account<'info, Mint>,
+    pub collection_mint: Account<'info, Mint>, // TODO: used for validation, do we *really* need this?
     #[account(mut)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -317,7 +346,7 @@ pub struct CreateCanvas<'info> {
 
 #[derive(Accounts)]
 #[instruction(slot_index: u8)]
-pub struct AddTokenToCanvasSlot<'info> {
+pub struct TransferTokenToCanvas<'info> {
     #[account(
         seeds = [
             b"canvas",
@@ -445,4 +474,7 @@ impl CanvasModelSlotMintAssociation {
 pub enum ErrorCode {
     NameTooLong,
     HeadNotAtIndex,
+    InvalidUserTokenAccountBalance,
+    InvalidProgramTokenAccountBalance,
+    FailedToTransfer,
 }
