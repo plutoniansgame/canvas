@@ -96,7 +96,7 @@ pub mod canvas {
 
     pub fn create_canvas_model_slot_mint_association(
         ctx: Context<CreateCanvasModelSlotMintAssociation>,
-        _slot_index: u8,
+        slot_index: u8,
         is_collection: bool,
         bump: u8,
     ) -> Result<()> {
@@ -122,6 +122,7 @@ pub mod canvas {
         let canvas = &mut ctx.accounts.canvas;
         let creator = &ctx.accounts.creator;
 
+        canvas.authority = creator.key();
         canvas.canvas_model = canvas_model.key();
         canvas.creator = creator.key();
         canvas.name = name;
@@ -130,7 +131,7 @@ pub mod canvas {
         Ok(())
     }
 
-    pub fn transfer_token_to_canvas(ctx: Context<TransferTokenToCanvas>) -> Result<()> {
+    pub fn transfer_token_to_canvas(ctx: Context<TransferTokenToCanvas>, slot_index: u8) -> Result<()> {
         let creator = &ctx.accounts.creator;
         let _canvas = &ctx.accounts.canvas;
         let _canvas_model = &ctx.accounts.canvas_model;
@@ -138,6 +139,7 @@ pub mod canvas {
         let token_account = &mut ctx.accounts.token_account;
         let cs_token_account = &mut ctx.accounts.canvas_slot_token_account;
         let token_program = &ctx.accounts.token_program;
+        msg!("deserialized inputs");
 
         if token_account.amount != 1 {
             msg!("users token account balance must equal 1");
@@ -149,6 +151,8 @@ pub mod canvas {
             return Err(ErrorCode::InvalidProgramTokenAccountBalance.into());
         }
 
+        msg!("checked token balances");
+
         let cpi_context = CpiContext::new(
             token_program.to_account_info(),
             Transfer {
@@ -158,6 +162,7 @@ pub mod canvas {
             },
         );
 
+        msg!("preparing to transfer");
         transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 }
@@ -375,19 +380,42 @@ pub struct TransferTokenToCanvas<'info> {
             b"canvas_model_slot",
             creator.key().as_ref(),
             canvas_model.key().as_ref(),
-            canvas_model.name.as_ref(),
+            canvas_model_slot.name.as_ref(),
             &[slot_index]
         ],
         bump,
         has_one = canvas_model
     )]
     canvas_model_slot: Account<'info, CanvasModelSlot>,
+    #[account(mint::decimals = 0)]
     mint: Account<'info, Mint>,
+    #[account(
+        mut, 
+        token::mint = mint,
+        token::authority = creator 
+    )]
     token_account: Account<'info, TokenAccount>,
+    #[account(
+        init,
+        payer = creator,
+        token::mint = mint,
+        token::authority = canvas,
+        seeds = [
+            b"canvas_token_account",
+            creator.key().as_ref(),
+            canvas.key().as_ref(),
+            canvas_model.key().as_ref(),
+            canvas_model_slot.key().as_ref(),
+            mint.key().as_ref()
+        ],
+        bump
+    )] 
     canvas_slot_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
     creator: Signer<'info>,
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
+    rent: Sysvar<'info, Rent>
 }
 // State Accounts
 #[account]
@@ -431,6 +459,7 @@ pub struct Canvas {
     name: String,
     canvas_model: Pubkey,
     creator: Pubkey,
+    authority: Pubkey,
     bump: u8,
 }
 
