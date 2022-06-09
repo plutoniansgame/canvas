@@ -29,8 +29,8 @@ describe("nft canvas", () => {
   const account1 = loadKeyPairFromFs("dev_keys/account1.json");
   const account2 = loadKeyPairFromFs("dev_keys/account2.json");
 
-  it("initialize and set authority", async () => {});
-  it("create nft canvas model", async () => {
+  xit("initialize and set authority", async () => {});
+  xit("create nft canvas model", async () => {
     const connection = anchor.getProvider().connection;
 
     // let account1Balance = await connection.getBalance(account1.publicKey);
@@ -145,7 +145,7 @@ describe("nft canvas", () => {
     );
   });
 
-  it("create component slots", async () => {
+  xit("create component slots", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
@@ -289,7 +289,7 @@ describe("nft canvas", () => {
     // });
   });
 
-  it("associate mints with slots", async () => {
+  xit("associate mints with slots", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
@@ -498,7 +498,7 @@ describe("nft canvas", () => {
     );
   });
 
-  it("create nft canvas instance", async () => {
+  xit("create nft canvas instance", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
@@ -1084,10 +1084,66 @@ describe("nft canvas", () => {
       console.log(e);
       assert.fail();
     }
+
+    const attributeNFTMint = new Token(
+      connection,
+      attributeMintKeypair.publicKey,
+      TOKEN_PROGRAM_ID,
+      account1,
+    );
+    const accountInfo = await attributeNFTMint.getAccountInfo(
+      associatedTokenAccountAddress,
+    );
+
+    assert(
+      accountInfo.amount.eq(new BN(0)),
+      "token balance must equal 0 after transaction",
+    );
+
+    const tx4 = new Transaction();
+    const transferTokenFromCanvasToAccountIx = await program.methods
+      .transferTokenFromCanvasToAccount().accounts({
+        canvas: canvasAddress[0],
+        canvasModel: canvasModelAddress[0],
+        canvasModelSlot: canvasModelSlot1Address[0],
+        canvasSlotTokenAccount: canvasSlotTokenAccountAddress[0],
+        tokenAccount: associatedTokenAccountAddress,
+        authority: account1.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      }).instruction();
+
+    tx4.add(transferTokenFromCanvasToAccountIx);
+
+    let transferTokenFromCanvasToAccountSig = await connection.sendTransaction(
+      tx4,
+      [account1],
+      { skipPreflight: true },
+    );
+
+    let { blockhash, lastValidBlockHeight } = await connection
+      .getLatestBlockhash();
+    let confirmation = await connection.confirmTransaction({
+      blockhash,
+      lastValidBlockHeight,
+      signature: transferTokenFromCanvasToAccountSig,
+    });
+    if (confirmation.value.err) {
+      assert.fail();
+    }
+
+    const accountInfoAfter = await attributeNFTMint.getAccountInfo(
+      associatedTokenAccountAddress,
+    );
+    assert(
+      accountInfoAfter.amount.eq(new BN(1)),
+      "token balance must equal 1 after transaction",
+    );
   });
-  it("commit canvas and mint", async () => {});
-  it("consume nft and transfer backing nfts", async () => {});
-  it("cleans up accounts", async () => {
+
+  xit("commit canvas and mint", async () => {});
+  xit("consume nft and transfer backing nfts", async () => {});
+  xit("cleans up accounts", async () => {
     const connection = anchor.getProvider().connection;
 
     let allTokenAccounts = await connection.getTokenAccountsByOwner(

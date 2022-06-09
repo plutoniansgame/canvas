@@ -140,6 +140,7 @@ pub mod canvas {
         let cs_token_account = &mut ctx.accounts.canvas_slot_token_account;
         let token_program = &ctx.accounts.token_program;
 
+        //TODO: Use anchor constraints.
         if canvas_model_slot_mint_association
             .canvas_model_slot
             .ne(&canvas_model_slot.key())
@@ -173,6 +174,39 @@ pub mod canvas {
         );
 
         msg!("preparing to transfer");
+        transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
+    }
+
+    pub fn transfer_token_from_canvas_to_account(ctx: Context<TransferTokenFromCanvasToAccount>) -> Result<()> {
+        let authority = &ctx.accounts.authority;
+        let canvas = &ctx.accounts.canvas;
+        let token_account = &ctx.accounts.token_account;
+        let canvas_slot_token_account = &ctx.accounts.canvas_slot_token_account;
+        let token_program = &ctx.accounts.token_program;
+        let mint = &ctx.accounts.mint;
+
+
+            // 1. is the creator the authority?
+            //    true -- continue
+            //    false -- is the mint the authority?
+            //             true -- if the token account is associated with the mint and the balance is 1, continue.
+            //             false -- bail.
+
+        let bump_vector = canvas.bump.to_le_bytes();
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            b"canvas".as_ref(),
+            canvas.creator.as_ref(),
+            canvas.canvas_model.as_ref(),
+            canvas.name.as_bytes(),
+            bump_vector.as_ref(),
+        ]];
+
+        let cpi_context = CpiContext::new_with_signer(token_program.to_account_info(), Transfer {
+            from: canvas_slot_token_account.to_account_info(),
+            to: token_account.to_account_info(),
+            authority: canvas.to_account_info(),
+        }, signer_seeds);
+
         transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 }
@@ -420,11 +454,17 @@ pub struct TransferTokenToCanvas<'info> {
 
 #[derive(Accounts)]
 pub struct TransferTokenFromCanvasToAccount<'info> {
-    pub canvas_model: Account<'info, CanvasModel>,
+    pub canvas_model: Account<'info, CanvasModel>, // TODO: still need this?
     pub canvas_model_slot: Account<'info, CanvasModelSlot>,
+    #[account(mut)]
     pub canvas: Account<'info, Canvas>,
+    #[account(mut)]
+    pub canvas_slot_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
     pub token_account: Account<'info, TokenAccount>,
-    pub program_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -518,5 +558,6 @@ pub enum ErrorCode {
     InvalidUserTokenAccountBalance,
     InvalidProgramTokenAccountBalance,
     InvalidCanvasModelSlotMintAssociation,
+    InvalidPDA,
     FailedToTransfer,
 }
