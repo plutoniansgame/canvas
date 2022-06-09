@@ -48,7 +48,7 @@ pub mod canvas {
     pub fn create_canvas_model_slot(
         ctx: Context<CreateCanvasModelSlot>,
         name: String,
-        index: u32,
+        index: u8,
         bump: u8,
     ) -> Result<()> {
         if name.len() > NAME_LENGTH {
@@ -96,7 +96,7 @@ pub mod canvas {
 
     pub fn create_canvas_model_slot_mint_association(
         ctx: Context<CreateCanvasModelSlotMintAssociation>,
-        slot_index: u8,
+        _slot_index: u8,
         is_collection: bool,
         bump: u8,
     ) -> Result<()> {
@@ -131,15 +131,25 @@ pub mod canvas {
         Ok(())
     }
 
-    pub fn transfer_token_to_canvas(ctx: Context<TransferTokenToCanvas>, slot_index: u8) -> Result<()> {
+    pub fn transfer_token_to_canvas(ctx: Context<TransferTokenToCanvas>, canvas_model: Pubkey) -> Result<()> {
         let creator = &ctx.accounts.creator;
         let _canvas = &ctx.accounts.canvas;
-        let _canvas_model = &ctx.accounts.canvas_model;
-        let _canvas_model_slot = &ctx.accounts.canvas_model_slot;
+        let canvas_model_slot = &ctx.accounts.canvas_model_slot;
+        let canvas_model_slot_mint_association = &ctx.accounts.canvas_model_slot_mint_association;
         let token_account = &mut ctx.accounts.token_account;
         let cs_token_account = &mut ctx.accounts.canvas_slot_token_account;
         let token_program = &ctx.accounts.token_program;
-        msg!("deserialized inputs");
+
+        if canvas_model_slot_mint_association
+            .canvas_model_slot
+            .ne(&canvas_model_slot.key())
+            || canvas_model_slot_mint_association
+                .canvas_model
+                .ne(&canvas_model.key())
+        {
+            msg!("invalid canvas model slot mint association");
+            return Err(ErrorCode::InvalidCanvasModelSlotMintAssociation.into());
+        }
 
         if token_account.amount != 1 {
             msg!("users token account balance must equal 1");
@@ -350,7 +360,7 @@ pub struct CreateCanvas<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(slot_index: u8)]
+#[instruction(canvas_model: Pubkey)]
 pub struct TransferTokenToCanvas<'info> {
     #[account(
         seeds = [
@@ -362,26 +372,15 @@ pub struct TransferTokenToCanvas<'info> {
         bump,
         has_one = canvas_model,
         has_one = creator
-    )
-    ]
-    canvas: Account<'info, Canvas>,
-    #[account(
-        seeds = [
-            b"canvas_model", 
-            creator.key().as_ref(),
-            canvas_model.name.as_ref(),
-            canvas_model.collection_mint.as_ref()
-        ],
-        bump
     )]
-    canvas_model: Account<'info, CanvasModel>,
+    canvas: Account<'info, Canvas>,
     #[account(
         seeds = [
             b"canvas_model_slot",
             creator.key().as_ref(),
             canvas_model.key().as_ref(),
             canvas_model_slot.name.as_ref(),
-            &[slot_index]
+           &canvas_model_slot.index.to_be_bytes()
         ],
         bump,
         has_one = canvas_model
@@ -409,21 +408,34 @@ pub struct TransferTokenToCanvas<'info> {
             mint.key().as_ref()
         ],
         bump
-    )] 
+    )]
     canvas_slot_token_account: Account<'info, TokenAccount>,
+    canvas_model_slot_mint_association: Account<'info, CanvasModelSlotMintAssociation>,
     #[account(mut)]
     creator: Signer<'info>,
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
-    rent: Sysvar<'info, Rent>
+    rent: Sysvar<'info, Rent>,
 }
+
+#[derive(Accounts)]
+pub struct TransferTokenFromCanvasToAccount<'info> {
+    pub canvas_model: Account<'info, CanvasModel>,
+    pub canvas_model_slot: Account<'info, CanvasModelSlot>,
+    pub canvas: Account<'info, Canvas>,
+    pub token_account: Account<'info, TokenAccount>,
+    pub program_token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
 // State Accounts
 #[account]
 pub struct CanvasModel {
     pub creator: Pubkey,
     pub name: String,
     pub collection_mint: Pubkey,
-    pub slot_count: u32,
+    pub slot_count: u8,
     pub bump: u8,
 }
 
@@ -441,12 +453,12 @@ impl CanvasModel {
 pub struct CanvasModelSlot {
     canvas_model: Pubkey,
     name: String,
-    index: u32,
+    index: u8,
     bump: u8,
 }
 
 impl CanvasModelSlot {
-    const INDEX_LENGTH: usize = 4;
+    const INDEX_LENGTH: usize = 1;
     const LENGTH: usize = DISCRIMINATOR_LENGTH
         + PUBLIC_KEY_LENGTH
         + NAME_LENGTH
@@ -505,5 +517,6 @@ pub enum ErrorCode {
     HeadNotAtIndex,
     InvalidUserTokenAccountBalance,
     InvalidProgramTokenAccountBalance,
+    InvalidCanvasModelSlotMintAssociation,
     FailedToTransfer,
 }
