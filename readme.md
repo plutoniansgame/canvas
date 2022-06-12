@@ -1,12 +1,12 @@
 ![](logo.jpg)
 
-# NFT Canvas
+# NFT Canvas :construction: WIP :sparkles:
 
-NFT canvas will be a solana program that will facilitate two main objectives.
+NFT Canvas is a Solana Protocol that facilitates two main objectives.
 
-1. "Combining" nfts according to a recipe and generating a new NFT.
-1. "Consuming" a combined / composed NFT and transferring the original NFTs that
-   were used to create this composed nft to the recipient.
+1. "Composing" nfts according to a recipe and generating a new NFT.
+1. "Deconstructing" a composed NFT and allowing the holder of the deconstructed
+   NFT to redeem the original NFTs that were used to create it.
 
 ## Proposed flow
 
@@ -33,18 +33,6 @@ information on what NFTs may be inputs.
    should close the associated token account owned by the program.
 1. (user) - commit their NFT canvas, locking the nft components in a vault,
    minting a new NFT. This will mark the nft canvas instance as committed and
-
-## Ideas & Questions
-
-- Both of the identified use cases for this Program demand the ability of
-  specific source NFTs to specific "positions". use PDAs to identify slots.
-  Indexed PDAs (lists) are an option.
-- There will need to be a way to associate different mints with slots.
-- make it so the admin adds the token mint that will be used as the new NFTs'
-  collection when you create the canvas model.
-
-### Questions
-
-- How to represent slots / list of positions that are available. -- pdas all the
-  way down.
-- What do we call the entire scope? -- canvas model
+   change the authority of the canvas to whomever holds the token minted when
+   this canvas instance was committed.
+1. (user) - deconstruct (burn) a composed NFT and redeem its original parts.

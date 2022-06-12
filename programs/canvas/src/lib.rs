@@ -183,14 +183,15 @@ pub mod canvas {
         let token_account = &ctx.accounts.token_account;
         let canvas_slot_token_account = &ctx.accounts.canvas_slot_token_account;
         let token_program = &ctx.accounts.token_program;
-        let mint = &ctx.accounts.mint;
 
-
-            // 1. is the creator the authority?
-            //    true -- continue
-            //    false -- is the mint the authority?
-            //             true -- if the token account is associated with the mint and the balance is 1, continue.
-            //             false -- bail.
+        // if canvas.authority.ne(&authority.key()) {
+        //     if canvas.authority.ne(&mint.key()) {
+        //         return Err(ErrorCode::InvalidCanvasAuthority.into());
+        //     }
+        // }
+        // if token_account.amount.ne(&1) {
+        //     return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
+        // }
 
         let bump_vector = canvas.bump.to_le_bytes();
         let signer_seeds: &[&[&[u8]]] = &[&[
@@ -460,7 +461,11 @@ pub struct TransferTokenFromCanvasToAccount<'info> {
     pub canvas: Account<'info, Canvas>,
     #[account(mut)]
     pub canvas_slot_token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = authority
+    )]
     pub token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -555,9 +560,11 @@ impl CanvasModelSlotMintAssociation {
 pub enum ErrorCode {
     NameTooLong,
     HeadNotAtIndex,
+    InvalidUserTokenAccount,
     InvalidUserTokenAccountBalance,
     InvalidProgramTokenAccountBalance,
     InvalidCanvasModelSlotMintAssociation,
     InvalidPDA,
+    InvalidCanvasAuthority,
     FailedToTransfer,
 }

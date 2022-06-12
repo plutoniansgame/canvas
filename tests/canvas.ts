@@ -1108,6 +1108,7 @@ describe("nft canvas", () => {
         canvasModelSlot: canvasModelSlot1Address[0],
         canvasSlotTokenAccount: canvasSlotTokenAccountAddress[0],
         tokenAccount: associatedTokenAccountAddress,
+        // mint: attributeMintKeypair.publicKey,
         authority: account1.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
