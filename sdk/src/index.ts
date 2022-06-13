@@ -19,7 +19,7 @@ import {
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
   UseMethod,
 } from "@metaplex-foundation/mpl-token-metadata";
-import { Canvas } from "../target/types/canvas";
+import { Canvas } from "../../target/types/canvas";
 
 /**
  * @TODO parameterize all functions, remove test values
