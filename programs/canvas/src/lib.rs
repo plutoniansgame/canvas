@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use mpl_token_metadata::{ID as TOKEN_METADATA_PROGRAM_ID, instruction::{create_metadata_accounts_v2, CreateMetadataAccountArgsV2}, state::Collection};
 
 declare_id!("JA7XU4JeTBraEuVthAMRgg2LFc5oBTGfXxuDm1rPzZCZ");
 
@@ -8,9 +9,11 @@ const PUBLIC_KEY_LENGTH: usize = 32;
 const BUMP_LENGTH: usize = 1;
 const NAME_LENGTH: usize = 64;
 const BOOL_LENGTH: usize = 1;
+const OPTION_LENGTH: usize = 1;
 
 #[program]
 pub mod canvas {
+    use anchor_lang::solana_program;
     use anchor_spl::token::{transfer, Transfer};
 
     use super::*;
@@ -178,7 +181,7 @@ pub mod canvas {
     }
 
     pub fn transfer_token_from_canvas_to_account(ctx: Context<TransferTokenFromCanvasToAccount>) -> Result<()> {
-        let authority = &ctx.accounts.authority;
+        let _authority = &ctx.accounts.authority;
         let canvas = &ctx.accounts.canvas;
         let token_account = &ctx.accounts.token_account;
         let canvas_slot_token_account = &ctx.accounts.canvas_slot_token_account;
@@ -209,6 +212,47 @@ pub mod canvas {
         }, signer_seeds);
 
         transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
+    }
+
+    pub fn commit_mint(ctx: Context<CommitMint>, create_metadata_args: CreateMetadataAccountArgsV2) -> Result<()> {
+        let canvas = &ctx.accounts.canvas;
+        let canvas_model = &ctx.accounts.canvas_model;
+        let creator = &ctx.accounts.creator;
+        let mint = &ctx.accounts.mint;
+        let mint_authority = &ctx.accounts.mint_authority;
+        let metadata_account = &ctx.accounts.metadata_account;
+        let collection = Collection {verified: false, key: canvas_model.collection_mint};
+
+        // 1. create the nft metadata
+        let metadata_ix = create_metadata_accounts_v2(
+            TOKEN_METADATA_PROGRAM_ID,
+            metadata_account.key(),
+            mint.key(),
+            mint_authority.key(),
+            creator.key(),
+            canvas_model.creator,
+            create_metadata_args.data.name,
+            create_metadata_args.data.symbol,
+            create_metadata_args.data.uri,
+            create_metadata_args.data.creators,
+            create_metadata_args.data.seller_fee_basis_points,
+            false,
+            true,
+            Some(collection),
+            create_metadata_args.data.uses
+        );
+
+        msg!("metadata account_metas {:?}", metadata_account.to_account_metas(None));
+        // solana_program::program::invoke(metadata_ix, &[
+
+        // ]);
+
+        // 2. update the canvas data to reference the nft mint.
+        //    also make sure that the authority changes to the mint.
+
+        // 3. actually mint one token to the creators token account.
+
+        Ok(())
     }
 }
 
@@ -474,6 +518,33 @@ pub struct TransferTokenFromCanvasToAccount<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// From Metaplex (createMetadataAccountV2)
+/// Create Metadata object.
+///   0. `[writable]`  Metadata key (pda of ['metadata', program id, mint id])
+///   1. `[]` Mint of token asset
+///   2. `[signer]` Mint authority
+///   3. `[signer]` payer
+///   4. `[]` update authority info
+///   5. `[]` System program
+///   6. `[]` Rent info
+#[derive(Accounts)]
+pub struct CommitMint<'info> {
+    pub canvas: Account<'info, Canvas>,
+    pub canvas_model: Account<'info, CanvasModel>,
+    /// CHECK: Only need to check derivation.
+    /// This account needs to be uninitialized
+    /// so it can be used by Metaplex.
+    pub metadata_account: UncheckedAccount<'info>,
+    pub mint: Account<'info, Mint>,
+    pub mint_authority: Signer<'info>,
+    pub creator: Signer<'info>,
+    pub creator_token_account: Account<'info, TokenAccount>,
+    // pub update_authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>
+
+}
+
 // State Accounts
 #[account]
 pub struct CanvasModel {
@@ -482,6 +553,7 @@ pub struct CanvasModel {
     pub collection_mint: Pubkey,
     pub slot_count: u8,
     pub bump: u8,
+    pub creators: Option<Vec<Pubkey>>,
 }
 
 impl CanvasModel {
@@ -517,12 +589,13 @@ pub struct Canvas {
     canvas_model: Pubkey,
     creator: Pubkey,
     authority: Pubkey,
+    associated_mint: Option<Pubkey>,
     bump: u8,
 }
 
 impl Canvas {
     const LENGTH: usize =
-        DISCRIMINATOR_LENGTH + NAME_LENGTH + PUBLIC_KEY_LENGTH + PUBLIC_KEY_LENGTH;
+        DISCRIMINATOR_LENGTH + NAME_LENGTH + PUBLIC_KEY_LENGTH + PUBLIC_KEY_LENGTH  + PUBLIC_KEY_LENGTH  + OPTION_LENGTH + PUBLIC_KEY_LENGTH;
 }
 
 #[account]

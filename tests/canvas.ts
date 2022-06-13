@@ -18,6 +18,7 @@ import {
 } from "@solana/spl-token";
 import {
   createCreateMetadataAccountV2Instruction,
+  CreateMetadataAccountArgsV2,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
   UseMethod,
 } from "@metaplex-foundation/mpl-token-metadata";
@@ -1142,7 +1143,395 @@ describe("nft canvas", () => {
     );
   });
 
-  xit("commit canvas and mint", async () => {});
+  xit("commit canvas and mint", async () => {
+    const connection = anchor.getProvider().connection;
+    const tx = new Transaction();
+
+    const attributeMintKeypair = Keypair.generate();
+
+    // create account for attribute mint
+    let createAccountIx = SystemProgram.createAccount(
+      {
+        fromPubkey: account1.publicKey,
+        newAccountPubkey: attributeMintKeypair.publicKey,
+        lamports: await connection.getMinimumBalanceForRentExemption(
+          MintLayout.span,
+        ),
+        space: MintLayout.span,
+        programId: TOKEN_PROGRAM_ID,
+      },
+    );
+    // init attribute mint
+    let createMintIx = Token.createInitMintInstruction(
+      TOKEN_PROGRAM_ID,
+      attributeMintKeypair.publicKey,
+      0,
+      account1.publicKey,
+      account1.publicKey,
+    );
+    // create account for canvas collection mint
+    let canvasModelCollectionMintKeypair = Keypair.generate();
+    let createAccountIIx = SystemProgram.createAccount({
+      fromPubkey: account1.publicKey,
+      newAccountPubkey: canvasModelCollectionMintKeypair.publicKey,
+      lamports: await connection.getMinimumBalanceForRentExemption(
+        MintLayout.span,
+      ),
+      space: MintLayout.span,
+      programId: TOKEN_PROGRAM_ID,
+    });
+    // init canvas collection mint
+    let createMintIIx = Token.createInitMintInstruction(
+      TOKEN_PROGRAM_ID,
+      canvasModelCollectionMintKeypair.publicKey,
+      0,
+      account1.publicKey,
+      account1.publicKey,
+    );
+
+    let attributeMetadataAddress = findProgramAddressSync([
+      Buffer.from("metadata"),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      attributeMintKeypair.publicKey.toBuffer(),
+    ], TOKEN_METADATA_PROGRAM_ID);
+    let createMetadataIx = createCreateMetadataAccountV2Instruction({
+      metadata: attributeMetadataAddress[0],
+      mint: attributeMintKeypair.publicKey,
+      mintAuthority: account1.publicKey,
+      payer: account1.publicKey,
+      updateAuthority: account1.publicKey,
+    }, {
+      createMetadataAccountArgsV2: {
+        data: {
+          name: "Test From Devland",
+          symbol: "DEVLAND",
+          uri: "https://api.jsonbin.io/b/627e726138be29676103f1ae/1",
+          sellerFeeBasisPoints: 0,
+          creators: [{
+            address: account1.publicKey,
+            share: 100,
+            verified: false,
+          }],
+          collection: {
+            verified: false,
+            key: Keypair.generate().publicKey,
+          },
+          uses: {
+            useMethod: UseMethod.Burn,
+            remaining: 0,
+            total: 0,
+          },
+        },
+        isMutable: true,
+      },
+    });
+
+    const associatedTokenAccountAddress = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      attributeMintKeypair.publicKey,
+      account1.publicKey,
+      false,
+    );
+    const createUserTokenAccountIx = Token
+      .createAssociatedTokenAccountInstruction(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        attributeMintKeypair.publicKey,
+        associatedTokenAccountAddress,
+        account1.publicKey,
+        account1.publicKey,
+      );
+    const mintIx = Token.createMintToInstruction(
+      TOKEN_PROGRAM_ID,
+      attributeMintKeypair.publicKey,
+      associatedTokenAccountAddress,
+      account1.publicKey,
+      [],
+      1,
+    );
+
+    // const mintTokenIx = Token.createMintToInstruction(TOKEN_PROGRAM_ID, attributeMintKeypair.publicKey, );
+
+    let canvasModelName = "nil_bearz";
+    let canvasModelAddress = findProgramAddressSync([
+      Buffer.from("canvas_model"),
+      account1.publicKey.toBuffer(),
+      Buffer.from(canvasModelName),
+      canvasModelCollectionMintKeypair.publicKey.toBuffer(),
+    ], program.programId);
+    let createCanvasModelIx = await program.methods.createCanvasModel(
+      canvasModelName,
+      canvasModelAddress[1],
+    ).accounts({
+      canvasModel: canvasModelAddress[0],
+      collectionMint: canvasModelCollectionMintKeypair.publicKey,
+      systemProgram: SystemProgram.programId,
+    }).instruction();
+
+    // create incrementor
+    let canvasModelSlotIncrementorAddress = findProgramAddressSync([
+      Buffer.from("incrementor"),
+      account1.publicKey.toBuffer(),
+      canvasModelAddress[0].toBuffer(),
+      Buffer.from("canvas_model_slot"),
+    ], program.programId);
+
+    const createCanvasModelSlotIncrementorIx = await program.methods
+      .createCanvasModelSlotIncrementor(
+        "canvas_model_slot",
+        canvasModelSlotIncrementorAddress[1],
+      ).accounts({
+        canvasModel: canvasModelAddress[0],
+        creator: account1.publicKey,
+        incrementor: canvasModelSlotIncrementorAddress[0],
+        systemProgram: SystemProgram.programId,
+      }).instruction();
+
+    // create slots
+    const canvasModelSlot1Props = {
+      name: "head",
+      index: 1,
+    };
+
+    let canvasModelSlot1Address = findProgramAddressSync([
+      Buffer.from("canvas_model_slot"),
+      account1.publicKey.toBuffer(),
+      canvasModelAddress[0].toBuffer(),
+      Buffer.from(canvasModelSlot1Props.name),
+      new BN(canvasModelSlot1Props.index).toBuffer(),
+    ], program.programId);
+
+    const createCanvasModelSlotIx = await program.methods
+      .createCanvasModelSlot(
+        canvasModelSlot1Props.name,
+        canvasModelSlot1Props.index,
+        canvasModelSlot1Address[1],
+      ).accounts({
+        canvasModel: canvasModelAddress[0],
+        canvasModelSlot: canvasModelSlot1Address[0],
+        incrementor: canvasModelSlotIncrementorAddress[0],
+        collectionMint: canvasModelCollectionMintKeypair.publicKey,
+        systemProgram: SystemProgram.programId,
+      }).instruction();
+    // associate nft mints with slots
+    // create canvas
+    tx.add(createAccountIx)
+      .add(createMintIx)
+      .add(createMetadataIx)
+      .add(createAccountIIx)
+      .add(createMintIIx)
+      .add(createUserTokenAccountIx)
+      .add(mintIx);
+
+    try {
+      let initAccountsSig = await connection.sendTransaction(tx, [
+        account1,
+        attributeMintKeypair,
+        canvasModelCollectionMintKeypair,
+      ]);
+
+      let { blockhash, lastValidBlockHeight } = await connection
+        .getLatestBlockhash();
+
+      let confirmation = await connection.confirmTransaction({
+        blockhash,
+        lastValidBlockHeight,
+        signature: initAccountsSig,
+      });
+      if (confirmation.value.err) {
+        console.log(confirmation.value.err);
+        assert.fail();
+      }
+    } catch (e) {
+      console.log(e);
+      assert.fail();
+    }
+
+    let tx2 = new Transaction();
+
+    const canvasModelSlotMintAssociationAddress = findProgramAddressSync(
+      [
+        Buffer.from("canvas_model_slot_mint"),
+        account1.publicKey.toBuffer(),
+        canvasModelAddress[0].toBuffer(),
+        canvasModelSlot1Address[0].toBuffer(),
+        attributeMintKeypair.publicKey.toBuffer(),
+      ],
+      program.programId,
+    );
+
+    const createSlotMintAssociationIx = await program.methods
+      .createCanvasModelSlotMintAssociation(
+        canvasModelSlot1Props.index,
+        false,
+        canvasModelSlotMintAssociationAddress[1],
+      )
+      .accounts(
+        {
+          canvasModel: canvasModelAddress[0],
+          canvasModelSlot: canvasModelSlot1Address[0],
+          canvasModelSlotMintAssociation:
+            canvasModelSlotMintAssociationAddress[0],
+          associatedMint: attributeMintKeypair.publicKey,
+          creator: account1.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+      ).instruction();
+
+    tx2
+      .add(createCanvasModelIx)
+      .add(createCanvasModelSlotIncrementorIx)
+      .add(createCanvasModelSlotIx)
+      .add(createSlotMintAssociationIx);
+
+    try {
+      let setupCanvasSig = await connection.sendTransaction(tx2, [account1]);
+      let { blockhash, lastValidBlockHeight } = await connection
+        .getLatestBlockhash();
+
+      let confirmation = await connection.confirmTransaction({
+        blockhash,
+        lastValidBlockHeight,
+        signature: setupCanvasSig,
+      });
+
+      if (confirmation.value.err) {
+        console.log(confirmation.value.err);
+        assert.fail();
+      }
+    } catch (e) {
+      console.log(e);
+      assert.fail();
+    }
+
+    const tx3 = new Transaction();
+
+    const canvasName = "austin's nilbearz";
+    const canvasAddress = findProgramAddressSync([
+      Buffer.from("canvas"),
+      account1.publicKey.toBuffer(),
+      canvasModelAddress[0].toBuffer(),
+      Buffer.from(canvasName),
+    ], program.programId);
+    const createCanvasIx = await program.methods.createCanvas(
+      canvasName,
+      canvasAddress[1],
+    ).accounts({
+      canvas: canvasAddress[0],
+      canvasModel: canvasModelAddress[0],
+      creator: account1.publicKey,
+      systemProgram: SystemProgram.programId,
+    }).instruction();
+
+    const canvasSlotTokenAccountAddress = findProgramAddressSync(
+      [
+        Buffer.from("canvas_token_account"),
+        account1.publicKey.toBuffer(),
+        canvasAddress[0].toBuffer(),
+        canvasModelAddress[0].toBuffer(),
+        canvasModelSlot1Address[0].toBuffer(),
+        attributeMintKeypair.publicKey.toBuffer(),
+      ],
+      program.programId,
+    );
+
+    const transferTokenToCanvasIx = await program.methods
+      .transferTokenToCanvas(canvasModelAddress[0]).accounts(
+        {
+          canvas: canvasAddress[0],
+          canvasModelSlot: canvasModelSlot1Address[0],
+          tokenAccount: associatedTokenAccountAddress,
+          mint: attributeMintKeypair.publicKey,
+          canvasModelSlotMintAssociation:
+            canvasModelSlotMintAssociationAddress[0],
+          canvasSlotTokenAccount: canvasSlotTokenAccountAddress[0],
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          creator: account1.publicKey,
+        },
+      ).instruction();
+
+    tx3.add(createCanvasIx)
+      .add(transferTokenToCanvasIx);
+
+    try {
+      let createCanvasSig = await connection.sendTransaction(tx3, [account1]);
+      let { blockhash, lastValidBlockHeight } = await connection
+        .getLatestBlockhash();
+      let confirmation = await connection.confirmTransaction({
+        blockhash,
+        lastValidBlockHeight,
+        signature: createCanvasSig,
+      });
+
+      if (confirmation.value.err) {
+        console.log(confirmation.value.err);
+        assert.fail();
+      }
+    } catch (e) {
+      console.log(e);
+      assert.fail();
+    }
+
+    const attributeNFTMint = new Token(
+      connection,
+      attributeMintKeypair.publicKey,
+      TOKEN_PROGRAM_ID,
+      account1,
+    );
+    const accountInfo = await attributeNFTMint.getAccountInfo(
+      associatedTokenAccountAddress,
+    );
+
+    assert(
+      accountInfo.amount.eq(new BN(0)),
+      "token balance must equal 0 after transaction",
+    );
+
+    // commit and mint nft.
+    let tx4 = new Transaction();
+
+    let commitMintIx = await program.methods.commitMint({
+      data: {
+        name: "Test From Devland",
+        symbol: "DEVLAND",
+        uri: "https://api.jsonbin.io/b/627e726138be29676103f1ae/1",
+        sellerFeeBasisPoints: 0,
+        creators: [{
+          address: account1.publicKey,
+          share: 100,
+          verified: false,
+        }],
+        collection: {
+          verified: false,
+          key: Keypair.generate().publicKey,
+        },
+        uses: {
+          useMethod: UseMethod.Burn,
+          remaining: 0,
+          total: 0,
+        },
+      },
+      isMutable: true,
+    } as CreateMetadataAccountArgsV2).accounts({
+      creator: account1.publicKey,
+    })
+      .instruction();
+
+    const commitMintSig = await connection.sendTransaction(tx4, [account1]);
+    let { blockhash: blockHash4, lastValidBlockHeight: blockHeight4 } =
+      await connection.getLatestBlockhash();
+    const tx4Confirmation = await connection.confirmTransaction({
+      signature: commitMintSig,
+      blockhash: blockHash4,
+      lastValidBlockHeight: blockHeight4,
+    });
+
+    if (tx4Confirmation.value.err) {
+      assert.fail(tx4Confirmation.value.err.toString());
+    }
+  });
   xit("consume nft and transfer backing nfts", async () => {});
   xit("cleans up accounts", async () => {
     const connection = anchor.getProvider().connection;
@@ -1180,8 +1569,6 @@ describe("nft canvas", () => {
       let sig = await connection.sendTransaction(tx, [account1]);
       await connection.confirmTransaction(sig);
     }
-    // });
-
     // Token.createCloseAccountInstruction(TOKEN_PROGRAM_ID, )
     // get all token accounts.
     // burn all tokens.
