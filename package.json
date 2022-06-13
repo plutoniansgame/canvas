@@ -1,8 +1,19 @@
 {
     "scripts": {
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+        "build": "npm run build:esm; npm run build:cjs",
+        "build:cjs": "tsc -p tsconfig.cjs.json",
+        "build:esm": "tsc -p tsconfig.esm.json",
+        "clean": "rm -rf dist"
     },
+    "main": "dist/cjs/index.js",
+    "module": "dist/esm/index.js",
+    "typings": "dist/types/index.d.ts",
+    "keywords": [
+        "solana",
+        "nft"
+    ],
     "dependencies": {
         "@metaplex-foundation/mpl-token-metadata": "^2.1.1",
         "@metaplex/js": "^4.12.0",

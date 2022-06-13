@@ -178,7 +178,7 @@ pub mod canvas {
     }
 
     pub fn transfer_token_from_canvas_to_account(ctx: Context<TransferTokenFromCanvasToAccount>) -> Result<()> {
-        let authority = &ctx.accounts.authority;
+        let _authority = &ctx.accounts.authority;
         let canvas = &ctx.accounts.canvas;
         let token_account = &ctx.accounts.token_account;
         let canvas_slot_token_account = &ctx.accounts.canvas_slot_token_account;
