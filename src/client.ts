@@ -15,19 +15,20 @@ import {
 } from "@solana/web3.js";
 import {
   createCreateMetadataAccountV2Instruction,
+  CreateMetadataAccountArgsV2,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
   UseMethod,
 } from "@metaplex-foundation/mpl-token-metadata";
-
+import { Canvas } from "../target/types/canvas";
 
 /**
  * @TODO parameterize all functions, remove test values
  */
 
 export class CanvasSdkClient {
-  private program: anchor.Program<any> = null as any;
   private connection: Connection = null as any;
   private wallet: Wallet = null as any;
+  private program = anchor.workspace.Canvas as anchor.Program<Canvas>;
 
   constructor({
     wallet,
@@ -468,7 +469,11 @@ export class CanvasSdkClient {
     return tx;
   }
 
-  async assignNftToCanvas() {
+  async assignNftToCanvas({
+    metadataArgs,
+  }: {
+    metadataArgs: CreateMetadataAccountArgsV2;
+  }) {
     const tx = new Transaction();
 
     const attributeMintKeypair = Keypair.generate();
@@ -528,31 +533,7 @@ export class CanvasSdkClient {
         updateAuthority: this.wallet.publicKey,
       },
       {
-        createMetadataAccountArgsV2: {
-          data: {
-            name: "Test From Devland",
-            symbol: "DEVLAND",
-            uri: "https://api.jsonbin.io/b/627e726138be29676103f1ae/1",
-            sellerFeeBasisPoints: 0,
-            creators: [
-              {
-                address: this.wallet.publicKey,
-                share: 100,
-                verified: false,
-              },
-            ],
-            collection: {
-              verified: false,
-              key: Keypair.generate().publicKey,
-            },
-            uses: {
-              useMethod: UseMethod.Burn,
-              remaining: 0,
-              total: 0,
-            },
-          },
-          isMutable: true,
-        },
+        createMetadataAccountArgsV2: metadataArgs,
       }
     );
 
