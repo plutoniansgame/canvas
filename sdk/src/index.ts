@@ -48,64 +48,7 @@ export class CanvasSdkClient {
   }) {
     const tx = new Transaction();
 
-    const mintKeypair = Keypair.generate();
-
-    const createAccountInstruction = SystemProgram.createAccount({
-      fromPubkey: this.wallet.publicKey,
-      newAccountPubkey: mintKeypair.publicKey,
-      lamports: await this.connection.getMinimumBalanceForRentExemption(
-        MintLayout.span
-      ),
-      space: MintLayout.span,
-      programId: TOKEN_PROGRAM_ID,
-    });
-
-    tx.add(createAccountInstruction);
-
-    const createMintIx = Token.createInitMintInstruction(
-      TOKEN_PROGRAM_ID,
-      mintKeypair.publicKey,
-      0,
-      this.wallet.publicKey,
-      this.wallet.publicKey
-    );
-
-    tx.add(createMintIx);
-
-    const canvasModelAddress = findProgramAddressSync(
-      [
-        Buffer.from("canvas_model"),
-        this.wallet.publicKey.toBuffer(),
-        Buffer.from(canvasModelName),
-        mintKeypair.publicKey.toBuffer(),
-      ],
-      this.program.programId
-    );
-
-    const createCanvasModelIx = await this.program.methods
-      .createCanvasModel(canvasModelName, canvasModelAddress[1])
-      .accounts({
-        canvasModel: canvasModelAddress[0],
-        creator: this.wallet.publicKey,
-        collectionMint: mintKeypair.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([mintKeypair])
-      .instruction();
-
-    tx.add(createCanvasModelIx);
-
-    return tx;
-  }
-
-  async initCanvasModelTransaction({
-    canvasModelName,
-  }: {
-    canvasModelName: string;
-  }) {
-    const tx = new Transaction();
-
-    let collectionMint = Keypair.generate();
+    const collectionMint = Keypair.generate();
 
     const createAccountInstruction = SystemProgram.createAccount({
       fromPubkey: this.wallet.publicKey,
@@ -117,6 +60,8 @@ export class CanvasSdkClient {
       programId: TOKEN_PROGRAM_ID,
     });
 
+    tx.add(createAccountInstruction);
+
     const createMintIx = Token.createInitMintInstruction(
       TOKEN_PROGRAM_ID,
       collectionMint.publicKey,
@@ -125,15 +70,12 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const canvasModelAddress = findProgramAddressSync(
-      [
-        Buffer.from("canvas_model"),
-        this.wallet.publicKey.toBuffer(),
-        Buffer.from(canvasModelName),
-        collectionMint.publicKey.toBuffer(),
-      ],
-      this.program.programId
-    );
+    tx.add(createMintIx);
+
+    const canvasModelAddress = this.findCanvasModelAddress({
+      canvasModelName,
+      collectionMint: collectionMint.publicKey,
+    });
 
     const createCanvasModelIx = await this.program.methods
       .createCanvasModel(canvasModelName, canvasModelAddress[1])
@@ -143,9 +85,11 @@ export class CanvasSdkClient {
         collectionMint: collectionMint.publicKey,
         systemProgram: SystemProgram.programId,
       })
+      .signers([collectionMint])
       .instruction();
 
-    tx.add(createAccountInstruction).add(createMintIx).add(createCanvasModelIx);
+    tx.add(createCanvasModelIx);
+
     return tx;
   }
 
@@ -165,7 +109,7 @@ export class CanvasSdkClient {
     );
   }
 
-  getCanvasModelAddress({
+  findCanvasModelAddress({
     canvasModelName,
     collectionMint,
   }: {
@@ -190,7 +134,7 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = this.getCanvasModelAddress({
+    const canvasModelAddress = this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -226,7 +170,7 @@ export class CanvasSdkClient {
     collectionMint: PublicKey;
     slotNumber: number;
   }) {
-    const canvasModelAddress = this.getCanvasModelAddress({
+    const canvasModelAddress = this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -292,7 +236,7 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const canvasModelAddress = this.getCanvasModelAddress({
+    const canvasModelAddress = this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -328,7 +272,7 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = this.getCanvasModelAddress({
+    const canvasModelAddress = this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -353,7 +297,7 @@ export class CanvasSdkClient {
   }) {
     const tx = new Transaction();
 
-    let collectionMint = Keypair.generate();
+    const collectionMint = Keypair.generate();
 
     const createAccountInstruction = SystemProgram.createAccount({
       fromPubkey: this.wallet.publicKey,
@@ -377,6 +321,7 @@ export class CanvasSdkClient {
       canvasModelName,
       collectionMint: collectionMint.publicKey,
     });
+    
 
     const createCanvasModelSlotIncrementorIx =
       await this.createIncrementorInstructions({
@@ -492,7 +437,7 @@ export class CanvasSdkClient {
       [],
       1
     );
-    const canvasModelAddress = this.getCanvasModelAddress({
+    const canvasModelAddress = this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
