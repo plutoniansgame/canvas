@@ -307,22 +307,11 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    const canvasModelSlotIncrementorAddress = this.findSlotIncrementorAddress({
-      canvasModelAddress: canvasModelAddress[0],
-    });
-
-    const createCanvasModelSlotIncrementorIx = await this.program.methods
-      .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
-        canvasModelSlotIncrementorAddress[1]
-      )
-      .accounts({
-        canvasModel: canvasModelAddress[0],
-        incrementor: canvasModelSlotIncrementorAddress[0],
-        creator: this.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .instruction();
+    const createCanvasModelSlotIncrementorIx =
+      await this.createIncrementorInstructions({
+        canvasModelName,
+        collectionMint,
+      });
 
     tx.add(createAccountInstruction)
       .add(createMintIx)
@@ -339,15 +328,10 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = findProgramAddressSync(
-      [
-        Buffer.from("canvas_model"),
-        this.wallet.publicKey.toBuffer(),
-        Buffer.from(canvasModelName),
-        collectionMint.toBuffer(),
-      ],
-      this.program.programId
-    );
+    const canvasModelAddress = this.getCanvasModelAddress({
+      canvasModelName,
+      collectionMint,
+    });
 
     const createCanvasModelIx = await this.program.methods
       .createCanvasModel(canvasModelName, canvasModelAddress[1])
@@ -389,33 +373,16 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const canvasModelAddress = this.getCanvasModelAddress({
-      collectionMint: collectionMint.publicKey,
-      canvasModelName,
-    });
-
     const createCanvasModelIx = await this.createCanvasModelInstruction({
       canvasModelName,
       collectionMint: collectionMint.publicKey,
     });
 
-    const canvasModelSlotIncrementorAddress = this.findSlotIncrementorAddress({
-      canvasModelAddress: canvasModelAddress[0],
-    });
-
-    const createCanvasModelSlotIncrementorIx = await this.program.methods
-      .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
-        canvasModelSlotIncrementorAddress[1]
-      )
-      .accounts({
-        canvasModel: canvasModelAddress[0],
-        incrementor: canvasModelSlotIncrementorAddress[0],
-        creator: this.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .instruction();
-
+    const createCanvasModelSlotIncrementorIx =
+      await this.createIncrementorInstructions({
+        canvasModelName,
+        collectionMint: collectionMint.publicKey,
+      });
     tx.add(createAccountInstruction)
       .add(createMintIx)
       .add(createCanvasModelIx)
@@ -432,12 +399,12 @@ export class CanvasSdkClient {
     metadataArgs,
     canvasModelName,
     canvasName,
-    canvasModelCollectionMint,
+    collectionMint,
   }: {
     metadataArgs: CreateMetadataAccountArgsV2;
     canvasModelName: string;
     canvasName: string;
-    canvasModelCollectionMint: PublicKey;
+    collectionMint: PublicKey;
   }) {
     const tx = new Transaction();
 
@@ -464,7 +431,7 @@ export class CanvasSdkClient {
     // create account for canvas collection mint
     const createAccountIIx = SystemProgram.createAccount({
       fromPubkey: this.wallet.publicKey,
-      newAccountPubkey: canvasModelCollectionMint,
+      newAccountPubkey: collectionMint,
       lamports: await this.connection.getMinimumBalanceForRentExemption(
         MintLayout.span
       ),
@@ -474,7 +441,7 @@ export class CanvasSdkClient {
     // init canvas collection mint
     const createMintIIx = Token.createInitMintInstruction(
       TOKEN_PROGRAM_ID,
-      canvasModelCollectionMint,
+      collectionMint,
       0,
       this.wallet.publicKey,
       this.wallet.publicKey
@@ -525,18 +492,13 @@ export class CanvasSdkClient {
       [],
       1
     );
-    const canvasModelAddress = findProgramAddressSync(
-      [
-        Buffer.from("canvas_model"),
-        this.wallet.publicKey.toBuffer(),
-        Buffer.from(canvasModelName),
-        canvasModelCollectionMint.toBuffer(),
-      ],
-      this.program.programId
-    );
+    const canvasModelAddress = this.getCanvasModelAddress({
+      canvasModelName,
+      collectionMint,
+    });
     let createCanvasModelIx = await this.createCanvasModelInstruction({
       canvasModelName,
-      collectionMint: canvasModelCollectionMint,
+      collectionMint,
     });
 
     // create incrementor
@@ -544,18 +506,11 @@ export class CanvasSdkClient {
       canvasModelAddress: canvasModelAddress[0],
     });
 
-    const createCanvasModelSlotIncrementorIx = await this.program.methods
-      .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
-        canvasModelSlotIncrementorAddress[1]
-      )
-      .accounts({
-        canvasModel: canvasModelAddress[0],
-        creator: this.wallet.publicKey,
-        incrementor: canvasModelSlotIncrementorAddress[0],
-        systemProgram: SystemProgram.programId,
-      })
-      .instruction();
+    const createCanvasModelSlotIncrementorIx =
+      await this.createIncrementorInstructions({
+        canvasModelName,
+        collectionMint,
+      });
 
     // create slots
     const canvasModelSlot1Props = {
@@ -581,10 +536,10 @@ export class CanvasSdkClient {
         canvasModelSlot1Address[1]
       )
       .accounts({
+        collectionMint,
         canvasModel: canvasModelAddress[0],
         canvasModelSlot: canvasModelSlot1Address[0],
         incrementor: canvasModelSlotIncrementorAddress[0],
-        collectionMint: canvasModelCollectionMint,
         systemProgram: SystemProgram.programId,
       })
       .instruction();
