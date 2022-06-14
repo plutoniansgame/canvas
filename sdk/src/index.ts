@@ -42,7 +42,11 @@ export class CanvasSdkClient {
     this.connection = connection;
   }
 
-  async createNftCanvasModelTransaction({ name }: { name: string }) {
+  async createNftCanvasModelTransaction({
+    canvasModelName,
+  }: {
+    canvasModelName: string;
+  }) {
     const tx = new Transaction();
 
     const mintKeypair = Keypair.generate();
@@ -73,14 +77,14 @@ export class CanvasSdkClient {
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
-        Buffer.from(name),
+        Buffer.from(canvasModelName),
         mintKeypair.publicKey.toBuffer(),
       ],
       this.program.programId
     );
 
     const createCanvasModelIx = await this.program.methods
-      .createCanvasModel(name, canvasModelAddress[1])
+      .createCanvasModel(canvasModelName, canvasModelAddress[1])
       .accounts({
         canvasModel: canvasModelAddress[0],
         creator: this.wallet.publicKey,
@@ -95,7 +99,11 @@ export class CanvasSdkClient {
     return tx;
   }
 
-  async initCanvasModelTransaction({ name }: { name: string }) {
+  async initCanvasModelTransaction({
+    canvasModelName,
+  }: {
+    canvasModelName: string;
+  }) {
     const tx = new Transaction();
 
     let collectionMint = Keypair.generate();
@@ -122,14 +130,14 @@ export class CanvasSdkClient {
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
-        Buffer.from(name),
+        Buffer.from(canvasModelName),
         collectionMint.publicKey.toBuffer(),
       ],
       this.program.programId
     );
 
     const createCanvasModelIx = await this.program.methods
-      .createCanvasModel(name, canvasModelAddress[1])
+      .createCanvasModel(canvasModelName, canvasModelAddress[1])
       .accounts({
         canvasModel: canvasModelAddress[0],
         creator: this.wallet.publicKey,
@@ -143,17 +151,17 @@ export class CanvasSdkClient {
   }
 
   async createIncrementorInstructions({
-    canvasName,
+    canvasModelName,
     collectionMint,
   }: {
-    canvasName: string;
+    canvasModelName: string;
     collectionMint: PublicKey;
   }) {
     const canvasModelAddress = findProgramAddressSync(
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
-        Buffer.from(canvasName),
+        Buffer.from(canvasModelName),
         collectionMint.toBuffer(),
       ],
       this.program.programId
@@ -186,12 +194,12 @@ export class CanvasSdkClient {
   }
 
   async createSlotInstructions({
-    canvasName,
+    canvasModelName,
     slotName,
     collectionMint,
     slotNumber,
   }: {
-    canvasName: string;
+    canvasModelName: string;
     slotName: string;
     collectionMint: PublicKey;
     slotNumber: number;
@@ -200,7 +208,7 @@ export class CanvasSdkClient {
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
-        Buffer.from(canvasName),
+        Buffer.from(canvasModelName),
         collectionMint.toBuffer(),
       ],
       this.program.programId
@@ -241,7 +249,11 @@ export class CanvasSdkClient {
     return createSlotIx;
   }
 
-  async associateMintWithSlots() {
+  async associateMintWithSlots({
+    canvasModelName,
+  }: {
+    canvasModelName: string;
+  }) {
     const tx = new Transaction();
 
     let mintKeypair = Keypair.generate();
@@ -268,14 +280,14 @@ export class CanvasSdkClient {
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
-        Buffer.from("nil_bearz"),
+        Buffer.from(canvasModelName),
         mintKeypair.publicKey.toBuffer(),
       ],
       this.program.programId
     );
 
     const createCanvasModelIx = await this.program.methods
-      .createCanvasModel("nil_bearz", canvasModelAddress[1])
+      .createCanvasModel(canvasModelName, canvasModelAddress[1])
       .accounts({
         canvasModel: canvasModelAddress[0],
         creator: this.wallet.publicKey,
@@ -364,7 +376,7 @@ export class CanvasSdkClient {
     return tx;
   }
 
-  async createNftCanvas() {
+  async createNftCanvas({ canvasModelName }: { canvasModelName: string }) {
     const tx = new Transaction();
 
     let mintKeypair = Keypair.generate();
@@ -391,14 +403,14 @@ export class CanvasSdkClient {
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
-        Buffer.from("nil_bearz"),
+        Buffer.from(canvasModelName),
         mintKeypair.publicKey.toBuffer(),
       ],
       this.program.programId
     );
 
     const createCanvasModelIx = await this.program.methods
-      .createCanvasModel("nil_bearz", canvasModelAddress[1])
+      .createCanvasModel(canvasModelName, canvasModelAddress[1])
       .accounts({
         canvasModel: canvasModelAddress[0],
         creator: this.wallet.publicKey,
@@ -489,8 +501,12 @@ export class CanvasSdkClient {
 
   async assignNftToCanvas({
     metadataArgs,
+    canvasModelName,
+    canvasName,
   }: {
     metadataArgs: CreateMetadataAccountArgsV2;
+    canvasModelName: string;
+    canvasName: string;
   }) {
     const tx = new Transaction();
 
@@ -579,10 +595,6 @@ export class CanvasSdkClient {
       [],
       1
     );
-
-    // const mintTokenIx = Token.createMintToInstruction(TOKEN_PROGRAM_ID, attributeMintKeypair.publicKey, );
-
-    let canvasModelName = "nil_bearz";
     let canvasModelAddress = findProgramAddressSync(
       [
         Buffer.from("canvas_model"),
@@ -703,8 +715,6 @@ export class CanvasSdkClient {
       .add(createSlotMintAssociationIx);
 
     const tx3 = new Transaction();
-
-    const canvasName = "austin's nilbearz";
     const canvasAddress = findProgramAddressSync(
       [
         Buffer.from("canvas"),
