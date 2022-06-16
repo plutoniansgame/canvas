@@ -12,6 +12,7 @@ import {
   SystemProgram,
   Connection,
   PublicKey,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import {
   createCreateMetadataAccountV2Instruction,
@@ -40,12 +41,8 @@ export class CanvasSdkClient {
     this.connection = connection;
   }
 
-  async createCanvasModelTransaction({
-    canvasModelName,
-  }: {
-    canvasModelName: string;
-  }) {
-    const tx = new Transaction();
+  async createCanvasModels({ canvasModelName }: { canvasModelName: string }) {
+    const ixs: TransactionInstruction[] = [];
 
     const collectionMint = Keypair.generate();
 
@@ -59,7 +56,7 @@ export class CanvasSdkClient {
       programId: TOKEN_PROGRAM_ID,
     });
 
-    tx.add(createAccountInstruction);
+    ixs.push(createAccountInstruction);
 
     const createMintIx = Token.createInitMintInstruction(
       TOKEN_PROGRAM_ID,
@@ -69,7 +66,7 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    tx.add(createMintIx);
+    ixs.push(createMintIx);
 
     const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
@@ -87,12 +84,25 @@ export class CanvasSdkClient {
       .signers([collectionMint])
       .instruction();
 
-    tx.add(createCanvasModelIx);
+    ixs.push(createCanvasModelIx);
+
+    return ixs;
+  }
+
+  async createCanvasModelTransaction({
+    canvasModelName,
+  }: {
+    canvasModelName: string;
+  }) {
+    const tx = new Transaction();
+
+    const ixs = await this.createCanvasModels({ canvasModelName });
+    tx.add(...ixs);
 
     return tx;
   }
 
-  findSlotIncrementorAddress({
+  findSlotIncrementor({
     canvasModelAddress,
   }: {
     canvasModelAddress: PublicKey;
@@ -126,7 +136,7 @@ export class CanvasSdkClient {
     );
   }
 
-  async createIncrementorInstructions({
+  async createIncrementor({
     canvasModelName,
     collectionMint,
   }: {
@@ -138,10 +148,9 @@ export class CanvasSdkClient {
       collectionMint,
     });
 
-    const canvasModelSlotIncrementorAddress =
-      await this.findSlotIncrementorAddress({
-        canvasModelAddress: canvasModelAddress[0],
-      });
+    const canvasModelSlotIncrementorAddress = await this.findSlotIncrementor({
+      canvasModelAddress: canvasModelAddress[0],
+    });
 
     const createCanvasModelSlotIncrementorIx = await this.program.methods
       .createCanvasModelSlotIncrementor(
@@ -156,7 +165,12 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    return createCanvasModelSlotIncrementorIx;
+    return {
+      transaction: new Transaction().add(
+        ...[createCanvasModelSlotIncrementorIx]
+      ),
+      instructions: [createCanvasModelSlotIncrementorIx],
+    };
   }
 
   async findCanvasModelSlot({
@@ -180,7 +194,7 @@ export class CanvasSdkClient {
     );
   }
 
-  async createSlotInstructions({
+  async createSlot({
     canvasModelName,
     slotName,
     collectionMint,
@@ -196,10 +210,9 @@ export class CanvasSdkClient {
       collectionMint,
     });
 
-    const canvasModelSlotIncrementorAddress =
-      await this.findSlotIncrementorAddress({
-        canvasModelAddress: canvasModelAddress[0],
-      });
+    const canvasModelSlotIncrementorAddress = await this.findSlotIncrementor({
+      canvasModelAddress: canvasModelAddress[0],
+    });
 
     const canvasModelSlotAddress1 = await this.findCanvasModelSlot({
       slotName,
@@ -219,9 +232,11 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    return createSlotIx;
+    return {
+      instructions: [createSlotIx],
+      transactions: new Transaction().add(...[createSlotIx]),
+    };
   }
-
   /**
    * @todo remove test data
    * @returns
@@ -268,21 +283,22 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    const createCanvasModelSlotIncrementorIx =
-      await this.createIncrementorInstructions({
+    const createCanvasModelSlotIncrementorIx = (
+      await this.createIncrementor({
         canvasModelName,
         collectionMint,
-      });
+      })
+    ).instructions;
 
     tx.add(createAccountInstruction)
       .add(createMintIx)
       .add(createCanvasModelIx)
-      .add(createCanvasModelSlotIncrementorIx);
+      .add(...createCanvasModelSlotIncrementorIx);
 
     return tx;
   }
 
-  async createCanvasModelInstruction({
+  async createCanvasModel({
     canvasModelName,
     collectionMint,
   }: {
@@ -304,16 +320,13 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    return createCanvasModelIx;
+    return {
+      instructions: [createCanvasModelIx],
+      transaction: new Transaction().add(...[createCanvasModelIx]),
+    };
   }
 
-  async createNftCanvasTransaction({
-    canvasModelName,
-  }: {
-    canvasModelName: string;
-  }) {
-    const tx = new Transaction();
-
+  async createNftCanvas({ canvasModelName }: { canvasModelName: string }) {
     const collectionMint = Keypair.generate();
 
     const createAccountInstruction = SystemProgram.createAccount({
@@ -334,22 +347,34 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const createCanvasModelIx = await this.createCanvasModelInstruction({
-      canvasModelName,
-      collectionMint: collectionMint.publicKey,
-    });
-
-    const createCanvasModelSlotIncrementorIx =
-      await this.createIncrementorInstructions({
+    const createCanvasModelIx = (
+      await this.createCanvasModel({
         canvasModelName,
         collectionMint: collectionMint.publicKey,
-      });
-    tx.add(createAccountInstruction)
-      .add(createMintIx)
-      .add(createCanvasModelIx)
-      .add(createCanvasModelSlotIncrementorIx);
+      })
+    ).instructions;
 
-    return tx;
+    const createCanvasModelSlotIncrementorIx = (
+      await this.createIncrementor({
+        canvasModelName,
+        collectionMint: collectionMint.publicKey,
+      })
+    ).instructions;
+
+    return {
+      instructions: [
+        createAccountInstruction,
+        createMintIx,
+        ...createCanvasModelIx,
+        ...createCanvasModelSlotIncrementorIx,
+      ],
+      transaction: new Transaction().add(
+        createAccountInstruction,
+        createMintIx,
+        ...createCanvasModelIx,
+        ...createCanvasModelSlotIncrementorIx
+      ),
+    };
   }
 
   /**
@@ -457,22 +482,24 @@ export class CanvasSdkClient {
       canvasModelName,
       collectionMint,
     });
-    const createCanvasModelIx = await this.createCanvasModelInstruction({
-      canvasModelName,
-      collectionMint,
-    });
-
-    // create incrementor
-    const canvasModelSlotIncrementorAddress =
-      await this.findSlotIncrementorAddress({
-        canvasModelAddress: canvasModelAddress[0],
-      });
-
-    const createCanvasModelSlotIncrementorIx =
-      await this.createIncrementorInstructions({
+    const createCanvasModelIx = (
+      await this.createCanvasModel({
         canvasModelName,
         collectionMint,
-      });
+      })
+    ).instructions;
+
+    // create incrementor
+    const canvasModelSlotIncrementorAddress = await this.findSlotIncrementor({
+      canvasModelAddress: canvasModelAddress[0],
+    });
+
+    const createCanvasModelSlotIncrementorIx = (
+      await this.createIncrementor({
+        canvasModelName,
+        collectionMint,
+      })
+    ).instructions;
 
     // create slots
     const canvasModelSlot1Props = {
@@ -541,11 +568,12 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    tx2
-      .add(createCanvasModelIx)
-      .add(createCanvasModelSlotIncrementorIx)
-      .add(createCanvasModelSlotIx)
-      .add(createSlotMintAssociationIx);
+    tx2.add(
+      ...createCanvasModelIx,
+      ...createCanvasModelSlotIncrementorIx,
+      createCanvasModelSlotIx,
+      createSlotMintAssociationIx
+    );
 
     const tx3 = new Transaction();
     const canvasAddress = await PublicKey.findProgramAddress(
