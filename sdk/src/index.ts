@@ -1,6 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import { Wallet } from "@project-serum/anchor";
-import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
+// import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 import {
   MintLayout,
   TOKEN_PROGRAM_ID,
@@ -72,7 +72,7 @@ export class CanvasSdkClient {
 
     tx.add(createMintIx);
 
-    const canvasModelAddress = this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModelAddress({
       canvasModelName,
       collectionMint: collectionMint.publicKey,
     });
@@ -98,7 +98,7 @@ export class CanvasSdkClient {
   }: {
     canvasModelAddress: PublicKey;
   }) {
-    return findProgramAddressSync(
+    return PublicKey.findProgramAddress(
       [
         Buffer.from("incrementor"),
         this.wallet.publicKey.toBuffer(),
@@ -116,7 +116,7 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    return findProgramAddressSync(
+    return PublicKey.findProgramAddress(
       [
         Buffer.from("canvas_model"),
         this.wallet.publicKey.toBuffer(),
@@ -134,14 +134,15 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
 
-    const canvasModelSlotIncrementorAddress = this.findSlotIncrementorAddress({
-      canvasModelAddress: canvasModelAddress[0],
-    });
+    const canvasModelSlotIncrementorAddress =
+      await this.findSlotIncrementorAddress({
+        canvasModelAddress: canvasModelAddress[0],
+      });
 
     const createCanvasModelSlotIncrementorIx = await this.program.methods
       .createCanvasModelSlotIncrementor(
@@ -170,16 +171,17 @@ export class CanvasSdkClient {
     collectionMint: PublicKey;
     slotNumber: number;
   }) {
-    const canvasModelAddress = this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
 
-    const canvasModelSlotIncrementorAddress = this.findSlotIncrementorAddress({
-      canvasModelAddress: canvasModelAddress[0],
-    });
+    const canvasModelSlotIncrementorAddress =
+      await this.findSlotIncrementorAddress({
+        canvasModelAddress: canvasModelAddress[0],
+      });
 
-    const canvasModelSlotAddress1 = findProgramAddressSync(
+    const canvasModelSlotAddress1 = await PublicKey.findProgramAddress(
       [
         Buffer.from("canvas_model_slot"),
         this.wallet.publicKey.toBuffer(),
@@ -236,7 +238,7 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const canvasModelAddress = this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -272,7 +274,7 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -321,7 +323,6 @@ export class CanvasSdkClient {
       canvasModelName,
       collectionMint: collectionMint.publicKey,
     });
-    
 
     const createCanvasModelSlotIncrementorIx =
       await this.createIncrementorInstructions({
@@ -392,7 +393,7 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const attributeMetadataAddress = findProgramAddressSync(
+    const attributeMetadataAddress = await PublicKey.findProgramAddress(
       [
         Buffer.from("metadata"),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
@@ -437,7 +438,7 @@ export class CanvasSdkClient {
       [],
       1
     );
-    const canvasModelAddress = this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModelAddress({
       canvasModelName,
       collectionMint,
     });
@@ -447,9 +448,10 @@ export class CanvasSdkClient {
     });
 
     // create incrementor
-    let canvasModelSlotIncrementorAddress = this.findSlotIncrementorAddress({
-      canvasModelAddress: canvasModelAddress[0],
-    });
+    const canvasModelSlotIncrementorAddress =
+      await this.findSlotIncrementorAddress({
+        canvasModelAddress: canvasModelAddress[0],
+      });
 
     const createCanvasModelSlotIncrementorIx =
       await this.createIncrementorInstructions({
@@ -463,7 +465,7 @@ export class CanvasSdkClient {
       index: 1,
     };
 
-    let canvasModelSlot1Address = findProgramAddressSync(
+    let canvasModelSlot1Address = await PublicKey.findProgramAddress(
       [
         Buffer.from("canvas_model_slot"),
         this.wallet.publicKey.toBuffer(),
@@ -500,16 +502,17 @@ export class CanvasSdkClient {
 
     const tx2 = new Transaction();
 
-    const canvasModelSlotMintAssociationAddress = findProgramAddressSync(
-      [
-        Buffer.from("canvas_model_slot_mint"),
-        this.wallet.publicKey.toBuffer(),
-        canvasModelAddress[0].toBuffer(),
-        canvasModelSlot1Address[0].toBuffer(),
-        attributeMintKeypair.publicKey.toBuffer(),
-      ],
-      this.program.programId
-    );
+    const canvasModelSlotMintAssociationAddress =
+      await PublicKey.findProgramAddress(
+        [
+          Buffer.from("canvas_model_slot_mint"),
+          this.wallet.publicKey.toBuffer(),
+          canvasModelAddress[0].toBuffer(),
+          canvasModelSlot1Address[0].toBuffer(),
+          attributeMintKeypair.publicKey.toBuffer(),
+        ],
+        this.program.programId
+      );
 
     const createSlotMintAssociationIx = await this.program.methods
       .createCanvasModelSlotMintAssociation(
@@ -535,7 +538,7 @@ export class CanvasSdkClient {
       .add(createSlotMintAssociationIx);
 
     const tx3 = new Transaction();
-    const canvasAddress = findProgramAddressSync(
+    const canvasAddress = await PublicKey.findProgramAddress(
       [
         Buffer.from("canvas"),
         this.wallet.publicKey.toBuffer(),
@@ -554,7 +557,7 @@ export class CanvasSdkClient {
       })
       .instruction();
 
-    const canvasSlotTokenAccountAddress = findProgramAddressSync(
+    const canvasSlotTokenAccountAddress = await PublicKey.findProgramAddress(
       [
         Buffer.from("canvas_token_account"),
         this.wallet.publicKey.toBuffer(),
