@@ -71,7 +71,7 @@ export class CanvasSdkClient {
 
     tx.add(createMintIx);
 
-    const canvasModelAddress = await this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
       collectionMint: collectionMint.publicKey,
     });
@@ -108,7 +108,7 @@ export class CanvasSdkClient {
     );
   }
 
-  findCanvasModelAddress({
+  findCanvasModel({
     canvasModelName,
     collectionMint,
   }: {
@@ -133,7 +133,7 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = await this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
       collectionMint,
     });
@@ -159,6 +159,27 @@ export class CanvasSdkClient {
     return createCanvasModelSlotIncrementorIx;
   }
 
+  async findCanvasModelSlot({
+    slotName,
+    slotNumber,
+    canvasModelAddress,
+  }: {
+    slotName: string;
+    slotNumber: number;
+    canvasModelAddress: PublicKey;
+  }) {
+    return await PublicKey.findProgramAddress(
+      [
+        Buffer.from("canvas_model_slot"),
+        this.wallet.publicKey.toBuffer(),
+        canvasModelAddress.toBuffer(),
+        Buffer.from(slotName),
+        new anchor.BN(slotNumber).toBuffer(),
+      ],
+      this.program.programId
+    );
+  }
+
   async createSlotInstructions({
     canvasModelName,
     slotName,
@@ -170,7 +191,7 @@ export class CanvasSdkClient {
     collectionMint: PublicKey;
     slotNumber: number;
   }) {
-    const canvasModelAddress = await this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
       collectionMint,
     });
@@ -180,16 +201,11 @@ export class CanvasSdkClient {
         canvasModelAddress: canvasModelAddress[0],
       });
 
-    const canvasModelSlotAddress1 = await PublicKey.findProgramAddress(
-      [
-        Buffer.from("canvas_model_slot"),
-        this.wallet.publicKey.toBuffer(),
-        canvasModelAddress[0].toBuffer(),
-        Buffer.from(slotName),
-        new anchor.BN(slotNumber).toBuffer(),
-      ],
-      this.program.programId
-    );
+    const canvasModelSlotAddress1 = await this.findCanvasModelSlot({
+      slotName,
+      slotNumber,
+      canvasModelAddress: canvasModelAddress[0],
+    });
 
     const createSlotIx = await this.program.methods
       .createCanvasModelSlot(slotName, 1, canvasModelSlotAddress1[1])
@@ -237,7 +253,7 @@ export class CanvasSdkClient {
       this.wallet.publicKey
     );
 
-    const canvasModelAddress = await this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
       collectionMint,
     });
@@ -273,7 +289,7 @@ export class CanvasSdkClient {
     canvasModelName: string;
     collectionMint: PublicKey;
   }) {
-    const canvasModelAddress = await this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
       collectionMint,
     });
@@ -437,7 +453,7 @@ export class CanvasSdkClient {
       [],
       1
     );
-    const canvasModelAddress = await this.findCanvasModelAddress({
+    const canvasModelAddress = await this.findCanvasModel({
       canvasModelName,
       collectionMint,
     });
@@ -464,16 +480,11 @@ export class CanvasSdkClient {
       index: 1,
     };
 
-    const canvasModelSlot1Address = await PublicKey.findProgramAddress(
-      [
-        Buffer.from("canvas_model_slot"),
-        this.wallet.publicKey.toBuffer(),
-        canvasModelAddress[0].toBuffer(),
-        Buffer.from(canvasModelSlot1Props.name),
-        new anchor.BN(canvasModelSlot1Props.index).toBuffer(),
-      ],
-      this.program.programId
-    );
+    const canvasModelSlot1Address = await this.findCanvasModelSlot({
+      slotName: canvasModelSlot1Props.name,
+      canvasModelAddress: canvasModelAddress[0],
+      slotNumber: canvasModelSlot1Props.index,
+    });
 
     const createCanvasModelSlotIx = await this.program.methods
       .createCanvasModelSlot(
