@@ -1,6 +1,5 @@
 import * as anchor from "@project-serum/anchor";
 import { Wallet } from "@project-serum/anchor";
-// import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 import {
   MintLayout,
   TOKEN_PROGRAM_ID,
@@ -442,7 +441,7 @@ export class CanvasSdkClient {
       canvasModelName,
       collectionMint,
     });
-    let createCanvasModelIx = await this.createCanvasModelInstruction({
+    const createCanvasModelIx = await this.createCanvasModelInstruction({
       canvasModelName,
       collectionMint,
     });
@@ -465,7 +464,7 @@ export class CanvasSdkClient {
       index: 1,
     };
 
-    let canvasModelSlot1Address = await PublicKey.findProgramAddress(
+    const canvasModelSlot1Address = await PublicKey.findProgramAddress(
       [
         Buffer.from("canvas_model_slot"),
         this.wallet.publicKey.toBuffer(),
