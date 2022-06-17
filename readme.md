@@ -1,14 +1,29 @@
-![](logo.jpg)
+![](assets/images/logo.jpg)
 
-# NFT Canvas :construction: WIP :sparkles:
 
-NFT Canvas is a Solana Protocol that facilitates two main objectives.
+# 🖼️ NFT Canvas :construction: WIP :construction:
+Brought to you by minds behind <img src="assets/images/coin_gold.png" width="25" height="25" /> **[Coinboi](coinboi.com)** and <img src="assets/images/plutonians.jpg" width="25" height="25" style="border-radius:15px" /> **[Plutonians](plutonians.tech)**.
 
-1. "Composing" nfts and generating a new NFT.
-1. "Deconstructing" a composed NFT and allowing the holder of the deconstructed
-   NFT to redeem the original NFTs that were used to create it.
 
-## Proposed flow
+`NFT Canvas` is a Solana Protocol that facilitates two main objectives:
+1. **Composing NFTs** and generating a new NFT.
+2. **Deconstructing a composed NFT** and allowing the holder of the deconstructed
+   NFT to redeem for the **original NFTs** that were used to create it.
+
+### Concepts
+- Never loose your underlying NFT with construction
+- NFT's are stored/staked in a contract that is only redeamable via the original NFT.
+- Constructed NFT's can be traded/bought/sold
+- Construction (can be 1 way) set via construction options.
+
+### Why?
+We love NFT's but most of them are purely static. What if you wanted to swap out your PFP's hat for the day? or upgrade your ship's hull to make it stronger? These concepts are normal in other digtal spheres but have yet to be possible with NFT's. If NFT's are really the future we need to have them be just as flexible.
+
+Coinboi's tech was built from the begining to be customizable, but if customizable NFT's really we're the future, we couldn't keep it just to ourselves. We wanted other projects to benifit from where doing. So we decided to open it up for the Solana and broader blockchain community.
+
+> We truly believe that constructable/deconstructable NFT's are the next phase of growth for the ecosystem. 
+
+## 📝  Contract Flow (in progress)
 
 Calls to this contract will be made to initialize an account that will hold
 information on what NFTs may be inputs.
@@ -36,3 +51,22 @@ information on what NFTs may be inputs.
    change the authority of the canvas to whomever holds the token minted when
    this canvas instance was committed.
 1. (user) - deconstruct (burn) a composed NFT and redeem its original parts.
+
+
+## How to use:
+
+Coming soon
+
+----
+
+## Support Us
+You can support this tech by buying NFT's from the following projects.
+- [Coinboi](https://www.coinboi.com/)
+- [Plutonians](https://plutonians.tech/)
+- [Cryptostraps](https://www.cryptostraps.io)
+
+We'd love to feature projects that have contributed, let us know if you'd like your project listed.
+
+## Contribute
+Join the party and submit a PR.
+
