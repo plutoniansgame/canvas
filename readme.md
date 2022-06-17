@@ -1,7 +1,7 @@
 ![](assets/images/logo.jpg)
 
 
-# 🖼️ NFT Canvas :construction: WIP :construction:
+# 🖼️ NFT Canvas (:construction: WIP :construction:)
 Brought to you by minds behind <img src="assets/images/coin_gold.png" width="25" height="25" /> **[Coinboi](coinboi.com)** and <img src="assets/images/plutonians.jpg" width="25" height="25" style="border-radius:15px" /> **[Plutonians](plutonians.tech)**.
 
 
@@ -17,9 +17,9 @@ Brought to you by minds behind <img src="assets/images/coin_gold.png" width="25"
 - Construction (can be 1 way) set via construction options.
 
 ### Why?
-We love NFT's but most of them are purely static. What if you wanted to swap out your PFP's hat for the day? or upgrade your ship's hull to make it stronger? These concepts are normal in other digtal spheres but have yet to be possible with NFT's. If NFT's are really the future we need to have them be just as flexible.
+We love NFT's but most of them are purely static. What if you wanted to swap out your PFP's hat for the day? or upgrade your ship's hull to make it stronger? These concepts are normal in other digital spheres but have yet to be possible with NFT's. If NFT's are really the future we need to have them be just as flexible.
 
-Coinboi's tech was built from the begining to be customizable, but if customizable NFT's really we're the future, we couldn't keep it just to ourselves. We wanted other projects to benifit from where doing. So we decided to open it up for the Solana and broader blockchain community.
+Coinboi's tech was built from the beginning to be customizable, but if customizable NFT's really were the future, we couldn't keep it just to ourselves. We wanted the whole space to grow and other projects to benefit from what we're building. So we decided to open it up for the Solana and broader blockchain community. ❤️
 
 > We truly believe that constructable/deconstructable NFT's are the next phase of growth for the ecosystem. 
 
@@ -30,27 +30,27 @@ information on what NFTs may be inputs.
 
 1. (authority) - create the nft canvas model. this is the top level structure.
    this basically represents that nfts of a new type will be minted based on
-   users' assosiations that they create in their own instances of this model.
+   users' associations that they create in their own instances of this model.
    This may be the point at which a new mint account is created to represent the
    collection of nfts minted as the product of this model.
-1. (authority) - declare slots. the program doesn't need to know how many there
+2. (authority) - declare slots. the program doesn't need to know how many there
    are.
-1. (authority) - associate mints with slots
-1. (authority) - declare canvas model as ready
-1. (user) - create canvas instance. whover creates the nft canvas instance will
+3. (authority) - associate mints with slots
+4. (authority) - declare canvas model as ready
+5. (user) - create canvas instance. whoever creates the nft canvas instance will
    be its authority, once the user commits the canvas, an authorized mint will
    be created. whomever has a token account with a balance of 1 of this mint
    will be able to burn the NFT to redeem it for the nfts that were deposited.
-1. (user) - deposit NFT and associate it with a slot on their canvas instance.
+6. (user) - deposit NFT and associate it with a slot on their canvas instance.
    This will mean that the nft canvas instance will require an associated token
    account that matches the mint of the deposited nft each time this is done.
-1. (user) - remove NFT and disassociate it from their canvas instance. This
+7. (user) - remove NFT and disassociate it from their canvas instance. This
    should close the associated token account owned by the program.
-1. (user) - commit their NFT canvas, locking the nft components in a vault,
+8. (user) - commit their NFT canvas, locking the nft components in a vault,
    minting a new NFT. This will mark the nft canvas instance as committed and
    change the authority of the canvas to whomever holds the token minted when
    this canvas instance was committed.
-1. (user) - deconstruct (burn) a composed NFT and redeem its original parts.
+9. (user) - deconstruct (burn) a composed NFT and redeem its original parts.
 
 
 ## How to use:
