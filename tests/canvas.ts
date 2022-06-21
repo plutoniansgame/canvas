@@ -29,8 +29,8 @@ describe("nft canvas", () => {
   const account1 = loadKeyPairFromFs("dev_keys/account1.json");
   const account2 = loadKeyPairFromFs("dev_keys/account2.json");
 
-  xit("initialize and set authority", async () => {});
-  xit("create nft canvas model", async () => {
+  it("initialize and set authority", async () => {});
+  it("create nft canvas model", async () => {
     const connection = anchor.getProvider().connection;
 
     // let account1Balance = await connection.getBalance(account1.publicKey);
@@ -145,7 +145,7 @@ describe("nft canvas", () => {
     );
   });
 
-  xit("create component slots", async () => {
+  it("create component slots", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
@@ -289,7 +289,7 @@ describe("nft canvas", () => {
     // });
   });
 
-  xit("associate mints with slots", async () => {
+  it("associate mints with slots", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
@@ -498,7 +498,7 @@ describe("nft canvas", () => {
     );
   });
 
-  xit("create nft canvas instance", async () => {
+  it("create nft canvas instance", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
@@ -1108,7 +1108,7 @@ describe("nft canvas", () => {
         canvasModelSlot: canvasModelSlot1Address[0],
         canvasSlotTokenAccount: canvasSlotTokenAccountAddress[0],
         tokenAccount: associatedTokenAccountAddress,
-        // mint: attributeMintKeypair.publicKey,
+        mint: attributeMintKeypair.publicKey,
         authority: account1.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
@@ -1142,9 +1142,9 @@ describe("nft canvas", () => {
     );
   });
 
-  xit("commit canvas and mint", async () => {});
-  xit("consume nft and transfer backing nfts", async () => {});
-  xit("cleans up accounts", async () => {
+  it("commit canvas and mint", async () => {});
+  it("consume nft and transfer backing nfts", async () => {});
+  it("cleans up accounts", async () => {
     const connection = anchor.getProvider().connection;
 
     let allTokenAccounts = await connection.getTokenAccountsByOwner(
