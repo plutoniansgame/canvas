@@ -214,7 +214,7 @@ pub mod canvas {
         transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 
-    pub fn commit_mint(ctx: Context<CommitMint>, create_metadata_args: CreateMetadataAccountArgsV2) -> Result<()> {
+    pub fn commit_mint(ctx: Context<CommitMint>, create_metadata_args: CreateMetadataArgs) -> Result<()> {
         let canvas = &ctx.accounts.canvas;
         let canvas_model = &ctx.accounts.canvas_model;
         let creator = &ctx.accounts.creator;
@@ -231,15 +231,15 @@ pub mod canvas {
             mint_authority.key(),
             creator.key(),
             canvas_model.creator,
-            create_metadata_args.data.name,
-            create_metadata_args.data.symbol,
-            create_metadata_args.data.uri,
-            create_metadata_args.data.creators,
-            create_metadata_args.data.seller_fee_basis_points,
+            create_metadata_args.0.data.name,
+            create_metadata_args.0.data.symbol,
+            create_metadata_args.0.data.uri,
+            create_metadata_args.0.data.creators,
+            create_metadata_args.0.data.seller_fee_basis_points,
             false,
             true,
             Some(collection),
-            create_metadata_args.data.uses
+            create_metadata_args.0.data.uses
         );
 
         msg!("metadata account_metas {:?}", metadata_account.to_account_metas(None));
@@ -641,3 +641,6 @@ pub enum ErrorCode {
     InvalidCanvasAuthority,
     FailedToTransfer,
 }
+
+#[derive(AnchorDeserialize, AnchorSerialize, Clone)]
+pub struct CreateMetadataArgs(CreateMetadataAccountArgsV2);

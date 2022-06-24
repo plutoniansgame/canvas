@@ -1143,7 +1143,7 @@ describe("nft canvas", () => {
     );
   });
 
-  xit("commit canvas and mint", async () => {
+  it("commit canvas and mint", async () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
