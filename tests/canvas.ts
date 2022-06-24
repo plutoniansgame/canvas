@@ -1492,31 +1492,10 @@ describe("nft canvas", () => {
     // commit and mint nft.
     let tx4 = new Transaction();
 
-    let commitMintIx = await program.methods.commitMint({
-      data: {
-        name: "Test From Devland",
-        symbol: "DEVLAND",
-        uri: "https://api.jsonbin.io/b/627e726138be29676103f1ae/1",
-        sellerFeeBasisPoints: 0,
-        creators: [{
-          address: account1.publicKey,
-          share: 100,
-          verified: false,
-        }],
-        collection: {
-          verified: false,
-          key: Keypair.generate().publicKey,
-        },
-        uses: {
-          useMethod: UseMethod.Burn,
-          remaining: 0,
-          total: 0,
-        },
-      },
-      isMutable: true,
-    } as CreateMetadataAccountArgsV2).accounts({
-      creator: account1.publicKey,
-    })
+    let commitMintIx = await program.methods.commitMint({})
+      .accounts({
+        creator: account1.publicKey,
+      })
       .instruction();
 
     const commitMintSig = await connection.sendTransaction(tx4, [account1]);

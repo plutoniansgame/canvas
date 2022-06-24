@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
+use anchor_lang::{AnchorDeserialize, AnchorSerialize};
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use mpl_token_metadata::{ID as TOKEN_METADATA_PROGRAM_ID, instruction::{create_metadata_accounts_v2, CreateMetadataAccountArgsV2}, state::Collection};
+use mpl_token_metadata::{ID as TOKEN_METADATA_PROGRAM_ID, instruction::{create_metadata_accounts_v2}};
+// use mpl_token_metadata::instruction::{CreateMetadataAccountArgsV2};
 
 declare_id!("JA7XU4JeTBraEuVthAMRgg2LFc5oBTGfXxuDm1rPzZCZ");
 
@@ -13,7 +15,6 @@ const OPTION_LENGTH: usize = 1;
 
 #[program]
 pub mod canvas {
-    use anchor_lang::solana_program;
     use anchor_spl::token::{transfer, Transfer};
 
     use super::*;
@@ -223,6 +224,17 @@ pub mod canvas {
         let metadata_account = &ctx.accounts.metadata_account;
         let collection = Collection {verified: false, key: canvas_model.collection_mint};
 
+        let creators: Option<Vec<mpl_token_metadata::state::Creator>> = create_metadata_args.data.creators.map(|maybe_creators| {
+            let mut out = vec![];
+
+            for c in maybe_creators {
+                out.push(c.clone().into());
+            }
+
+            out
+        });
+
+        let uses: Option<mpl_token_metadata::state::Uses> = create_metadata_args.data.uses.clone().map(|maybe_u| maybe_u.into());
         // 1. create the nft metadata
         let metadata_ix = create_metadata_accounts_v2(
             TOKEN_METADATA_PROGRAM_ID,
@@ -234,12 +246,12 @@ pub mod canvas {
             create_metadata_args.data.name,
             create_metadata_args.data.symbol,
             create_metadata_args.data.uri,
-            create_metadata_args.data.creators,
+            creators,
             create_metadata_args.data.seller_fee_basis_points,
             false,
             true,
-            Some(collection),
-            create_metadata_args.data.uses
+            Some(collection.into()),
+            uses
         );
 
         msg!("metadata account_metas {:?}", metadata_account.to_account_metas(None));
@@ -640,4 +652,98 @@ pub enum ErrorCode {
     InvalidPDA,
     InvalidCanvasAuthority,
     FailedToTransfer,
+}
+
+#[repr(C)]
+#[derive(PartialEq, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+/// Args for create call
+pub struct CreateMetadataAccountArgsV2 {
+    /// Note that unique metadatas are disabled for now.
+    pub data: DataV2,
+    /// Whether you want your metadata to be updateable in the future.
+    pub is_mutable: bool,
+}
+
+
+#[repr(C)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Debug, Clone)]
+pub struct DataV2 {
+    /// The name of the asset
+    pub name: String,
+    /// The symbol for the asset
+    pub symbol: String,
+    /// URI pointing to JSON representing the asset
+    pub uri: String,
+    /// Royalty basis points that goes to creators in secondary sales (0-10000)
+    pub seller_fee_basis_points: u16,
+    /// Array of creators, optional
+    pub creators: Option<Vec<Creator>>,
+    /// Collection
+    pub collection: Option<Collection>,
+    /// Uses
+    pub uses: Option<Uses>,
+}
+
+
+#[repr(C)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Debug, Clone)]
+pub struct Creator {
+    pub address: Pubkey,
+    pub verified: bool,
+    // In percentages, NOT basis points ;) Watch out!
+    pub share: u8,
+}
+
+
+#[repr(C)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Debug, Clone)]
+pub struct Collection {
+    pub verified: bool,
+    pub key: Pubkey,
+}
+
+#[repr(C)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Debug, Clone)]
+pub struct Uses { // 17 bytes + Option byte
+    pub use_method: UseMethod, //1
+    pub remaining: u64, //8
+    pub total: u64, //8
+}
+
+
+#[repr(C)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Debug, Clone)]
+pub enum UseMethod {
+    Burn,
+    Multiple,
+    Single,
+}
+
+impl From<Collection> for mpl_token_metadata::state::Collection {
+    fn from(c: Collection) -> Self {
+        Self { verified: c.verified, key: c.key }
+    }
+}
+
+impl From<Creator> for mpl_token_metadata::state::Creator {
+    fn from (c: Creator) -> Self {
+        Self { address: c.address, verified: c.verified, share: c.share }
+    }
+}
+
+
+impl From<Uses> for mpl_token_metadata::state::Uses {
+    fn from(u: Uses) -> Self {
+        Self { use_method: u.use_method.into(), remaining: u.remaining, total: u.total }
+    }
+}
+
+impl From <UseMethod> for mpl_token_metadata::state::UseMethod {
+    fn from (um: UseMethod) -> Self {
+        match um {
+            UseMethod::Burn => Self::Burn, 
+            UseMethod::Multiple => Self::Multiple, 
+            UseMethod::Single => Self::Single,
+        }
+    }
 }
