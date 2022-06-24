@@ -4,7 +4,7 @@
 
 NFT Canvas is a Solana Protocol that facilitates two main objectives.
 
-1. "Composing" nfts according to a recipe and generating a new NFT.
+1. "Composing" nfts and generating a new NFT.
 1. "Deconstructing" a composed NFT and allowing the holder of the deconstructed
    NFT to redeem the original NFTs that were used to create it.
 

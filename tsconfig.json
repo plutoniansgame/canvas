@@ -2,9 +2,13 @@
   "compilerOptions": {
     "types": ["mocha", "chai"],
     "typeRoots": ["./node_modules/@types"],
-    "lib": ["es2015"],
+    "moduleResolution": "node",
+    "lib": ["es2019"],
     "module": "commonjs",
-    "target": "es6",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "sourceMap": true,
+    "target": "es2019"
   }
 }
