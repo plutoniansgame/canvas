@@ -18,9 +18,9 @@ const OPTION_LENGTH: usize = 1;
 
 #[program]
 pub mod canvas {
-    use anchor_lang::solana_program;
-    use anchor_spl::token::{mint_to, transfer, MintTo, Transfer};
+    use anchor_spl::token;
     use mpl_token_metadata::state::Metadata;
+    use spl_token::instruction::AuthorityType;
 
     use super::*;
 
@@ -179,7 +179,7 @@ pub mod canvas {
 
         let cpi_context = CpiContext::new(
             token_program.to_account_info(),
-            Transfer {
+            token::Transfer {
                 from: token_account.to_account_info(),
                 to: cs_token_account.to_account_info(),
                 authority: creator.to_account_info(),
@@ -187,7 +187,7 @@ pub mod canvas {
         );
 
         msg!("preparing to transfer");
-        transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
+        token::transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 
     pub fn transfer_token_from_canvas_to_account(
@@ -219,7 +219,7 @@ pub mod canvas {
 
         let cpi_context = CpiContext::new_with_signer(
             token_program.to_account_info(),
-            Transfer {
+            token::Transfer {
                 from: canvas_slot_token_account.to_account_info(),
                 to: token_account.to_account_info(),
                 authority: canvas.to_account_info(),
@@ -227,7 +227,7 @@ pub mod canvas {
             signer_seeds,
         );
 
-        transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
+        token::transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 
     pub fn commit_mint(ctx: Context<CommitMint>) -> Result<()> {
@@ -258,9 +258,9 @@ pub mod canvas {
             bump_vector.as_ref(),
         ]];
 
-        let cpi_context = CpiContext::new_with_signer(
+        let mint_to_context = CpiContext::new_with_signer(
             token_program.to_account_info(),
-            MintTo {
+            token::MintTo {
                 mint: mint.to_account_info(),
                 to: creator_token_account.to_account_info(),
                 authority: canvas.to_account_info(),
@@ -268,11 +268,20 @@ pub mod canvas {
             signer_seeds,
         );
 
-        mint_to(cpi_context, 1)?;
+        token::mint_to(mint_to_context, 1)?;
         // one nft should be minted to the user.
         // the mint authority should be disabled after.
 
-        Ok(())
+        let set_authority_context = CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            token::SetAuthority {
+                current_authority: canvas.to_account_info(),
+                account_or_mint: mint.to_account_info(),
+            },
+            signer_seeds,
+        );
+
+        token::set_authority(set_authority_context, AuthorityType::MintTokens, None)
     }
 }
 

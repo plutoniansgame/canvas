@@ -1148,6 +1148,7 @@ describe("nft canvas", () => {
     const connection = anchor.getProvider().connection;
     const tx = new Transaction();
 
+    const collectionKeypair = Keypair.generate();
     const attributeMintKeypair = Keypair.generate();
 
     // create account for attribute mint
@@ -1171,10 +1172,9 @@ describe("nft canvas", () => {
       account1.publicKey,
     );
     // create account for canvas collection mint
-    let canvasModelCollectionMintKeypair = Keypair.generate();
     let createAccountIIx = SystemProgram.createAccount({
       fromPubkey: account1.publicKey,
-      newAccountPubkey: canvasModelCollectionMintKeypair.publicKey,
+      newAccountPubkey: collectionKeypair.publicKey,
       lamports: await connection.getMinimumBalanceForRentExemption(
         MintLayout.span,
       ),
@@ -1184,7 +1184,7 @@ describe("nft canvas", () => {
     // init canvas collection mint
     let createMintIIx = Token.createInitMintInstruction(
       TOKEN_PROGRAM_ID,
-      canvasModelCollectionMintKeypair.publicKey,
+      collectionKeypair.publicKey,
       0,
       account1.publicKey,
       account1.publicKey,
@@ -1215,7 +1215,7 @@ describe("nft canvas", () => {
           }],
           collection: {
             verified: false,
-            key: Keypair.generate().publicKey,
+            key: collectionKeypair.publicKey,
           },
           uses: {
             useMethod: UseMethod.Burn,
@@ -1259,14 +1259,14 @@ describe("nft canvas", () => {
       Buffer.from("canvas_model"),
       account1.publicKey.toBuffer(),
       Buffer.from(canvasModelName),
-      canvasModelCollectionMintKeypair.publicKey.toBuffer(),
+      collectionKeypair.publicKey.toBuffer(),
     ], program.programId);
     let createCanvasModelIx = await program.methods.createCanvasModel(
       canvasModelName,
       canvasModelAddress[1],
     ).accounts({
       canvasModel: canvasModelAddress[0],
-      collectionMint: canvasModelCollectionMintKeypair.publicKey,
+      collectionMint: collectionKeypair.publicKey,
       systemProgram: SystemProgram.programId,
     }).instruction();
 
@@ -1312,7 +1312,7 @@ describe("nft canvas", () => {
         canvasModel: canvasModelAddress[0],
         canvasModelSlot: canvasModelSlot1Address[0],
         incrementor: canvasModelSlotIncrementorAddress[0],
-        collectionMint: canvasModelCollectionMintKeypair.publicKey,
+        collectionMint: collectionKeypair.publicKey,
         systemProgram: SystemProgram.programId,
       }).instruction();
     // associate nft mints with slots
@@ -1329,7 +1329,7 @@ describe("nft canvas", () => {
       let initAccountsSig = await connection.sendTransaction(tx, [
         account1,
         attributeMintKeypair,
-        canvasModelCollectionMintKeypair,
+        collectionKeypair,
       ]);
 
       let { blockhash, lastValidBlockHeight } = await connection
@@ -1525,7 +1525,7 @@ describe("nft canvas", () => {
           }],
           collection: {
             verified: false,
-            key: Keypair.generate().publicKey,
+            key: collectionKeypair.publicKey,
           },
           uses: {
             useMethod: UseMethod.Burn,
