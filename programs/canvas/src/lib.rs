@@ -1,7 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use mpl_token_metadata::{ID as TOKEN_METADATA_PROGRAM_ID, instruction::{create_metadata_accounts_v2, CreateMetadataAccountArgsV2}, state::Collection};
+use mpl_token_metadata::{
+    instruction::{create_metadata_accounts_v2, CreateMetadataAccountArgsV2},
+    state::Collection,
+    ID as TOKEN_METADATA_PROGRAM_ID,
+};
 
+use crate::program::Canvas as CanvasProgram;
 declare_id!("JA7XU4JeTBraEuVthAMRgg2LFc5oBTGfXxuDm1rPzZCZ");
 
 const DISCRIMINATOR_LENGTH: usize = 8;
@@ -14,7 +19,8 @@ const OPTION_LENGTH: usize = 1;
 #[program]
 pub mod canvas {
     use anchor_lang::solana_program;
-    use anchor_spl::token::{transfer, Transfer};
+    use anchor_spl::token::{mint_to, transfer, MintTo, Transfer};
+    use mpl_token_metadata::state::Metadata;
 
     use super::*;
 
@@ -31,6 +37,7 @@ pub mod canvas {
         name: String,
         bump: u8,
     ) -> Result<()> {
+        // TODO: The canvas model should be the Collection Authority.
         if name.len() > NAME_LENGTH {
             return Err(ErrorCode::NameTooLong.into());
         }
@@ -134,7 +141,10 @@ pub mod canvas {
         Ok(())
     }
 
-    pub fn transfer_token_to_canvas(ctx: Context<TransferTokenToCanvas>, canvas_model: Pubkey) -> Result<()> {
+    pub fn transfer_token_to_canvas(
+        ctx: Context<TransferTokenToCanvas>,
+        canvas_model: Pubkey,
+    ) -> Result<()> {
         let creator = &ctx.accounts.creator;
         let _canvas = &ctx.accounts.canvas;
         let canvas_model_slot = &ctx.accounts.canvas_model_slot;
@@ -180,7 +190,9 @@ pub mod canvas {
         transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 
-    pub fn transfer_token_from_canvas_to_account(ctx: Context<TransferTokenFromCanvasToAccount>) -> Result<()> {
+    pub fn transfer_token_from_canvas_to_account(
+        ctx: Context<TransferTokenFromCanvasToAccount>,
+    ) -> Result<()> {
         let _authority = &ctx.accounts.authority;
         let canvas = &ctx.accounts.canvas;
         let token_account = &ctx.accounts.token_account;
@@ -205,52 +217,60 @@ pub mod canvas {
             bump_vector.as_ref(),
         ]];
 
-        let cpi_context = CpiContext::new_with_signer(token_program.to_account_info(), Transfer {
-            from: canvas_slot_token_account.to_account_info(),
-            to: token_account.to_account_info(),
-            authority: canvas.to_account_info(),
-        }, signer_seeds);
+        let cpi_context = CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            Transfer {
+                from: canvas_slot_token_account.to_account_info(),
+                to: token_account.to_account_info(),
+                authority: canvas.to_account_info(),
+            },
+            signer_seeds,
+        );
 
         transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 
-    pub fn commit_mint(ctx: Context<CommitMint>, create_metadata_args: CreateMetadataAccountArgsV2) -> Result<()> {
+    pub fn commit_mint(ctx: Context<CommitMint>) -> Result<()> {
         let canvas = &ctx.accounts.canvas;
         let canvas_model = &ctx.accounts.canvas_model;
         let creator = &ctx.accounts.creator;
+        let creator_token_account = &ctx.accounts.creator_token_account;
         let mint = &ctx.accounts.mint;
-        let mint_authority = &ctx.accounts.mint_authority;
         let metadata_account = &ctx.accounts.metadata_account;
-        let collection = Collection {verified: false, key: canvas_model.collection_mint};
+        let token_program = &ctx.accounts.token_program;
 
-        // 1. create the nft metadata
-        let metadata_ix = create_metadata_accounts_v2(
-            TOKEN_METADATA_PROGRAM_ID,
-            metadata_account.key(),
-            mint.key(),
-            mint_authority.key(),
-            creator.key(),
-            canvas_model.creator,
-            create_metadata_args.data.name,
-            create_metadata_args.data.symbol,
-            create_metadata_args.data.uri,
-            create_metadata_args.data.creators,
-            create_metadata_args.data.seller_fee_basis_points,
-            false,
-            true,
-            Some(collection),
-            create_metadata_args.data.uses
+        // metadata account should deserialize.
+        let metadata = Metadata::from_account_info(&metadata_account.to_account_info())
+            .or_else(|_| Err(ErrorCode::InvalidMetadataAccount))?;
+        // collection sould match the collection specified during the creation of the CanvasModel account.
+        let collection = metadata.collection.ok_or(ErrorCode::InvalidCollection)?;
+
+        if collection.key != canvas_model.collection_mint {
+            return Err(ErrorCode::InvalidCollection.into());
+        }
+
+        let bump_vector = canvas.bump.to_le_bytes();
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            b"canvas".as_ref(),
+            canvas.creator.as_ref(),
+            canvas.canvas_model.as_ref(),
+            canvas.name.as_bytes(),
+            bump_vector.as_ref(),
+        ]];
+
+        let cpi_context = CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            MintTo {
+                mint: mint.to_account_info(),
+                to: creator_token_account.to_account_info(),
+                authority: canvas.to_account_info(),
+            },
+            signer_seeds,
         );
 
-        msg!("metadata account_metas {:?}", metadata_account.to_account_metas(None));
-        // solana_program::program::invoke(metadata_ix, &[
-
-        // ]);
-
-        // 2. update the canvas data to reference the nft mint.
-        //    also make sure that the authority changes to the mint.
-
-        // 3. actually mint one token to the creators token account.
+        mint_to(cpi_context, 1)?;
+        // one nft should be minted to the user.
+        // the mint authority should be disabled after.
 
         Ok(())
     }
@@ -468,9 +488,9 @@ pub struct TransferTokenToCanvas<'info> {
     #[account(mint::decimals = 0)]
     mint: Account<'info, Mint>,
     #[account(
-        mut, 
+        mut,
         token::mint = mint,
-        token::authority = creator 
+        token::authority = creator
     )]
     token_account: Account<'info, TokenAccount>,
     #[account(
@@ -518,31 +538,29 @@ pub struct TransferTokenFromCanvasToAccount<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// From Metaplex (createMetadataAccountV2)
-/// Create Metadata object.
-///   0. `[writable]`  Metadata key (pda of ['metadata', program id, mint id])
-///   1. `[]` Mint of token asset
-///   2. `[signer]` Mint authority
-///   3. `[signer]` payer
-///   4. `[]` update authority info
-///   5. `[]` System program
-///   6. `[]` Rent info
 #[derive(Accounts)]
 pub struct CommitMint<'info> {
+    #[account(has_one = canvas_model)]
     pub canvas: Account<'info, Canvas>,
     pub canvas_model: Account<'info, CanvasModel>,
-    /// CHECK: Only need to check derivation.
-    /// This account needs to be uninitialized
-    /// so it can be used by Metaplex.
+    /// CHECK: We must deserialize this into a metadata struct instance
+    /// at runtime.
     pub metadata_account: UncheckedAccount<'info>,
+    // an initialized mint that HAS NOT minted an NFT yet.
+    #[account(
+        constraint = mint.supply == 0 @ ErrorCode::InvalidMintSupply,
+        constraint = mint.mint_authority == Some(canvas.key()).into() @ ErrorCode::InvalidMintAuthority
+    )]
     pub mint: Account<'info, Mint>,
-    pub mint_authority: Signer<'info>,
     pub creator: Signer<'info>,
+    #[account(
+        has_one = mint,
+        constraint = creator_token_account.owner == creator.key() @ ErrorCode::InvalidUserTokenAccount
+    )]
     pub creator_token_account: Account<'info, TokenAccount>,
     // pub update_authority: Signer<'info>,
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>
-
+    // pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
 }
 
 // State Accounts
@@ -594,8 +612,13 @@ pub struct Canvas {
 }
 
 impl Canvas {
-    const LENGTH: usize =
-        DISCRIMINATOR_LENGTH + NAME_LENGTH + PUBLIC_KEY_LENGTH + PUBLIC_KEY_LENGTH  + PUBLIC_KEY_LENGTH  + OPTION_LENGTH + PUBLIC_KEY_LENGTH;
+    const LENGTH: usize = DISCRIMINATOR_LENGTH
+        + NAME_LENGTH
+        + PUBLIC_KEY_LENGTH
+        + PUBLIC_KEY_LENGTH
+        + PUBLIC_KEY_LENGTH
+        + OPTION_LENGTH
+        + PUBLIC_KEY_LENGTH;
 }
 
 #[account]
@@ -639,5 +662,9 @@ pub enum ErrorCode {
     InvalidCanvasModelSlotMintAssociation,
     InvalidPDA,
     InvalidCanvasAuthority,
+    InvalidMetadataAccount,
+    InvalidMintSupply,
+    InvalidMintAuthority,
+    InvalidCollection,
     FailedToTransfer,
 }
