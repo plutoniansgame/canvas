@@ -1106,8 +1106,6 @@ describe("nft canvas", () => {
     const transferTokenFromCanvasToAccountIx = await program.methods
       .transferTokenFromCanvasToAccount().accounts({
         canvas: canvasAddress[0],
-        canvasModel: canvasModelAddress[0],
-        canvasModelSlot: canvasModelSlot1Address[0],
         canvasSlotTokenAccount: canvasSlotTokenAccountAddress[0],
         tokenAccount: associatedTokenAccountAddress,
         mint: attributeMintKeypair.publicKey,

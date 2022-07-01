@@ -1,12 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use mpl_token_metadata::{
-    instruction::{create_metadata_accounts_v2, CreateMetadataAccountArgsV2},
-    state::Collection,
-    ID as TOKEN_METADATA_PROGRAM_ID,
-};
+// use mpl_token_metadata::{state::Collection, ID as TOKEN_METADATA_PROGRAM_ID};
 
-use crate::program::Canvas as CanvasProgram;
 declare_id!("JA7XU4JeTBraEuVthAMRgg2LFc5oBTGfXxuDm1rPzZCZ");
 
 const DISCRIMINATOR_LENGTH: usize = 8;
@@ -132,7 +127,7 @@ pub mod canvas {
         let canvas = &mut ctx.accounts.canvas;
         let creator = &ctx.accounts.creator;
 
-        canvas.authority = creator.key();
+        canvas.authority = CanvasAuthority::Creator(creator.key());
         canvas.canvas_model = canvas_model.key();
         canvas.creator = creator.key();
         canvas.name = name;
@@ -198,15 +193,7 @@ pub mod canvas {
         let token_account = &ctx.accounts.token_account;
         let canvas_slot_token_account = &ctx.accounts.canvas_slot_token_account;
         let token_program = &ctx.accounts.token_program;
-
-        // if canvas.authority.ne(&authority.key()) {
-        //     if canvas.authority.ne(&mint.key()) {
-        //         return Err(ErrorCode::InvalidCanvasAuthority.into());
-        //     }
-        // }
-        // if token_account.amount.ne(&1) {
-        //     return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
-        // }
+        let mint = &ctx.accounts.mint;
 
         let bump_vector = canvas.bump.to_le_bytes();
         let signer_seeds: &[&[&[u8]]] = &[&[
@@ -216,6 +203,36 @@ pub mod canvas {
             canvas.name.as_bytes(),
             bump_vector.as_ref(),
         ]];
+
+        match canvas.authority {
+            CanvasAuthority::Creator(_creator_pubkey) => {}
+            CanvasAuthority::Mint(mint_pubkey) => {
+                if mint.key().ne(&mint_pubkey) {
+                    msg!(
+                        "mint account must match stored canvas authority\ngot: {}\n expected: {}",
+                        mint.key(),
+                        mint_pubkey
+                    );
+                    return Err(ErrorCode::InvalidMint.into());
+                }
+                if token_account.mint.ne(&mint.key()) {
+                    msg!("invalid token account for mint {}", mint.key());
+                    return Err(ErrorCode::InvalidMint.into());
+                }
+                if canvas.associated_mint.ne(&Some(mint.key())) {
+                    msg!("mint account must be the canvas' associated mint");
+                    return Err(ErrorCode::InvalidMintAuthority.into());
+                }
+                if token_account.amount.ne(&1) {
+                    msg!("token account must hold exactly 1 token");
+                    return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
+                }
+                if mint.supply.ne(&1) {
+                    msg!("only one token may exist");
+                    return Err(ErrorCode::InvalidMintSupply.into());
+                }
+            }
+        }
 
         let cpi_context = CpiContext::new_with_signer(
             token_program.to_account_info(),
@@ -231,9 +248,8 @@ pub mod canvas {
     }
 
     pub fn commit_mint(ctx: Context<CommitMint>) -> Result<()> {
-        let canvas = &ctx.accounts.canvas;
+        let canvas = &mut ctx.accounts.canvas;
         let canvas_model = &ctx.accounts.canvas_model;
-        let creator = &ctx.accounts.creator;
         let creator_token_account = &ctx.accounts.creator_token_account;
         let mint = &ctx.accounts.mint;
         let metadata_account = &ctx.accounts.metadata_account;
@@ -281,7 +297,11 @@ pub mod canvas {
             signer_seeds,
         );
 
-        token::set_authority(set_authority_context, AuthorityType::MintTokens, None)
+        token::set_authority(set_authority_context, AuthorityType::MintTokens, None)?;
+
+        canvas.authority = CanvasAuthority::Mint(mint.key());
+
+        Ok(())
     }
 }
 
@@ -528,17 +548,11 @@ pub struct TransferTokenToCanvas<'info> {
 
 #[derive(Accounts)]
 pub struct TransferTokenFromCanvasToAccount<'info> {
-    pub canvas_model: Account<'info, CanvasModel>, // TODO: still need this?
-    pub canvas_model_slot: Account<'info, CanvasModelSlot>,
     #[account(mut)]
     pub canvas: Account<'info, Canvas>,
     #[account(mut)]
     pub canvas_slot_token_account: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        token::mint = mint,
-        token::authority = authority
-    )]
+    #[account(mut, token::mint = mint)]
     pub token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -549,7 +563,7 @@ pub struct TransferTokenFromCanvasToAccount<'info> {
 
 #[derive(Accounts)]
 pub struct CommitMint<'info> {
-    #[account(has_one = canvas_model)]
+    #[account(has_one = canvas_model, has_one = creator)]
     pub canvas: Account<'info, Canvas>,
     pub canvas_model: Account<'info, CanvasModel>,
     /// CHECK: We must deserialize this into a metadata struct instance
@@ -615,7 +629,7 @@ pub struct Canvas {
     name: String,
     canvas_model: Pubkey,
     creator: Pubkey,
-    authority: Pubkey,
+    authority: CanvasAuthority,
     associated_mint: Option<Pubkey>,
     bump: u8,
 }
@@ -661,6 +675,20 @@ impl CanvasModelSlotMintAssociation {
         + PUBLIC_KEY_LENGTH;
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
+pub enum CanvasAuthority {
+    Mint(Pubkey),
+    Creator(Pubkey),
+}
+
+impl CanvasAuthority {
+    pub fn key(&self) -> Pubkey {
+        match self {
+            CanvasAuthority::Creator(k) | CanvasAuthority::Mint(k) => *k,
+        }
+    }
+}
+
 #[error_code]
 pub enum ErrorCode {
     NameTooLong,
@@ -672,6 +700,7 @@ pub enum ErrorCode {
     InvalidPDA,
     InvalidCanvasAuthority,
     InvalidMetadataAccount,
+    InvalidMint,
     InvalidMintSupply,
     InvalidMintAuthority,
     InvalidCollection,
