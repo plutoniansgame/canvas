@@ -1106,8 +1106,6 @@ describe("nft canvas", () => {
     const transferTokenFromCanvasToAccountIx = await program.methods
       .transferTokenFromCanvasToAccount().accounts({
         canvas: canvasAddress[0],
-        canvasModel: canvasModelAddress[0],
-        canvasModelSlot: canvasModelSlot1Address[0],
         canvasSlotTokenAccount: canvasSlotTokenAccountAddress[0],
         tokenAccount: associatedTokenAccountAddress,
         mint: attributeMintKeypair.publicKey,
@@ -1618,8 +1616,28 @@ describe("nft canvas", () => {
       console.log(e);
       assert.fail();
     }
+
+    let canvas = await program.account.canvas.fetch(canvasAddress[0]);
+    assert.equal(
+      canvas.authority.toBase58(),
+      canvasMintKeypair.publicKey.toBase58(),
+      "canvas authority must change to mint.",
+    );
+    assert.equal(
+      canvas.associatedMint?.toBase58(),
+      canvasMintKeypair.publicKey.toBase58(),
+      "canvas associated mint must match mint",
+    );
+    assert.equal(
+      canvas.authorityTag,
+      1,
+      "canvas authority tag must equal creator tag",
+    );
   });
-  xit("consume nft and transfer backing nfts", async () => {});
+
+  it("consume nft and transfer backing nfts", async () => {
+  });
+
   xit("cleans up accounts", async () => {
     const connection = anchor.getProvider().connection;
 

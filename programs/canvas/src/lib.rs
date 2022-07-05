@@ -1,13 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use mpl_token_metadata::{
-    instruction::{create_metadata_accounts_v2, CreateMetadataAccountArgsV2},
-    state::Collection,
-    ID as TOKEN_METADATA_PROGRAM_ID,
-};
+// use mpl_token_metadata::{state::Collection, ID as TOKEN_METADATA_PROGRAM_ID};
 
-use crate::program::Canvas as CanvasProgram;
-declare_id!("JA7XU4JeTBraEuVthAMRgg2LFc5oBTGfXxuDm1rPzZCZ");
+declare_id!("BJCgYB56gxD9WsVaQanFoNByarTQm7qhsVLVKT6We8jn");
 
 const DISCRIMINATOR_LENGTH: usize = 8;
 const PUBLIC_KEY_LENGTH: usize = 32;
@@ -16,6 +11,11 @@ const NAME_LENGTH: usize = 64;
 const BOOL_LENGTH: usize = 1;
 const OPTION_LENGTH: usize = 1;
 
+// This could be an enum but right now
+// borsh does not support enum (de)serialization
+const CREATOR_AUTHORITY_TAG: u8 = 0;
+const MINT_AUTHORITY_TAG: u8 = 1;
+
 #[program]
 pub mod canvas {
     use anchor_spl::token;
@@ -23,14 +23,6 @@ pub mod canvas {
     use spl_token::instruction::AuthorityType;
 
     use super::*;
-
-    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
-        Ok(())
-    }
-
-    pub fn set_authority(_ctx: Context<SetAuthority>) -> Result<()> {
-        Ok(())
-    }
 
     pub fn create_canvas_model(
         ctx: Context<CreateCanvasModel>,
@@ -133,6 +125,7 @@ pub mod canvas {
         let creator = &ctx.accounts.creator;
 
         canvas.authority = creator.key();
+        canvas.authority_tag = CREATOR_AUTHORITY_TAG;
         canvas.canvas_model = canvas_model.key();
         canvas.creator = creator.key();
         canvas.name = name;
@@ -198,15 +191,7 @@ pub mod canvas {
         let token_account = &ctx.accounts.token_account;
         let canvas_slot_token_account = &ctx.accounts.canvas_slot_token_account;
         let token_program = &ctx.accounts.token_program;
-
-        // if canvas.authority.ne(&authority.key()) {
-        //     if canvas.authority.ne(&mint.key()) {
-        //         return Err(ErrorCode::InvalidCanvasAuthority.into());
-        //     }
-        // }
-        // if token_account.amount.ne(&1) {
-        //     return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
-        // }
+        let mint = &ctx.accounts.mint;
 
         let bump_vector = canvas.bump.to_le_bytes();
         let signer_seeds: &[&[&[u8]]] = &[&[
@@ -216,6 +201,41 @@ pub mod canvas {
             canvas.name.as_bytes(),
             bump_vector.as_ref(),
         ]];
+
+        match canvas.authority_tag {
+            CREATOR_AUTHORITY_TAG => {}
+            MINT_AUTHORITY_TAG => {
+                let associated_mint_pubkey = canvas
+                    .associated_mint
+                    .ok_or(ErrorCode::InvalidCanvasAuthority)?;
+
+                if mint.key().ne(&associated_mint_pubkey) {
+                    msg!(
+                        "mint account must match stored canvas authority\ngot: {}\n expected: {}",
+                        mint.key(),
+                        associated_mint_pubkey
+                    );
+                    return Err(ErrorCode::InvalidMint.into());
+                }
+                if token_account.mint.ne(&mint.key()) {
+                    msg!("invalid token account for mint {}", mint.key());
+                    return Err(ErrorCode::InvalidMint.into());
+                }
+                if canvas.associated_mint.ne(&Some(mint.key())) {
+                    msg!("mint account must be the canvas' associated mint");
+                    return Err(ErrorCode::InvalidMintAuthority.into());
+                }
+                if token_account.amount.ne(&1) {
+                    msg!("token account must hold exactly 1 token");
+                    return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
+                }
+                if mint.supply.ne(&1) {
+                    msg!("only one token may exist");
+                    return Err(ErrorCode::InvalidMintSupply.into());
+                }
+            }
+            _ => return Err(ErrorCode::InvalidCanvasAuthorityTag.into()),
+        }
 
         let cpi_context = CpiContext::new_with_signer(
             token_program.to_account_info(),
@@ -230,10 +250,29 @@ pub mod canvas {
         token::transfer(cpi_context, 1).map_err(|_| ErrorCode::FailedToTransfer.into())
     }
 
+    pub fn burn_token_and_claim_canvas_authority(
+        _ctx: Context<BurnTokenAndClaimCanvasAuthority>,
+    ) -> Result<()> {
+        // authenticate the token holder:
+        // make sure the canvas authority type is mint.
+        // make sure the mint exists.
+        // make sure the mint has no mint authority
+        // make sure they have a token account for the mint
+        // make sure the token account holds one token
+        // make sure the signer has authority over the token account
+        // make sure the nft metadata says the nft belongs to the canvas' collection_mint.
+
+        // burn the token
+        // close the associated token account
+        // change the authority type to user
+        // change the authority to the user
+
+        Ok(())
+    }
+
     pub fn commit_mint(ctx: Context<CommitMint>) -> Result<()> {
-        let canvas = &ctx.accounts.canvas;
+        let canvas = &mut ctx.accounts.canvas;
         let canvas_model = &ctx.accounts.canvas_model;
-        let creator = &ctx.accounts.creator;
         let creator_token_account = &ctx.accounts.creator_token_account;
         let mint = &ctx.accounts.mint;
         let metadata_account = &ctx.accounts.metadata_account;
@@ -268,6 +307,8 @@ pub mod canvas {
             signer_seeds,
         );
 
+        // TODO: sign this new NFT in as a member of the collection.
+
         token::mint_to(mint_to_context, 1)?;
         // one nft should be minted to the user.
         // the mint authority should be disabled after.
@@ -281,15 +322,15 @@ pub mod canvas {
             signer_seeds,
         );
 
-        token::set_authority(set_authority_context, AuthorityType::MintTokens, None)
+        token::set_authority(set_authority_context, AuthorityType::MintTokens, None)?;
+
+        canvas.authority = mint.key();
+        canvas.authority_tag = MINT_AUTHORITY_TAG;
+        canvas.associated_mint = Some(mint.key());
+
+        Ok(())
     }
 }
-
-#[derive(Accounts)]
-pub struct Initialize {}
-
-#[derive(Accounts)]
-pub struct SetAuthority {}
 
 // Program Accounts
 #[derive(Accounts)]
@@ -528,17 +569,11 @@ pub struct TransferTokenToCanvas<'info> {
 
 #[derive(Accounts)]
 pub struct TransferTokenFromCanvasToAccount<'info> {
-    pub canvas_model: Account<'info, CanvasModel>, // TODO: still need this?
-    pub canvas_model_slot: Account<'info, CanvasModelSlot>,
     #[account(mut)]
     pub canvas: Account<'info, Canvas>,
     #[account(mut)]
     pub canvas_slot_token_account: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        token::mint = mint,
-        token::authority = authority
-    )]
+    #[account(mut, token::mint = mint)]
     pub token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -549,7 +584,7 @@ pub struct TransferTokenFromCanvasToAccount<'info> {
 
 #[derive(Accounts)]
 pub struct CommitMint<'info> {
-    #[account(has_one = canvas_model)]
+    #[account(mut, has_one = canvas_model, has_one = creator)]
     pub canvas: Account<'info, Canvas>,
     pub canvas_model: Account<'info, CanvasModel>,
     /// CHECK: We must deserialize this into a metadata struct instance
@@ -570,6 +605,12 @@ pub struct CommitMint<'info> {
     // pub update_authority: Signer<'info>,
     // pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct BurnTokenAndClaimCanvasAuthority<'info> {
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
 // State Accounts
@@ -616,6 +657,7 @@ pub struct Canvas {
     canvas_model: Pubkey,
     creator: Pubkey,
     authority: Pubkey,
+    authority_tag: u8,
     associated_mint: Option<Pubkey>,
     bump: u8,
 }
@@ -627,7 +669,8 @@ impl Canvas {
         + PUBLIC_KEY_LENGTH
         + PUBLIC_KEY_LENGTH
         + OPTION_LENGTH
-        + PUBLIC_KEY_LENGTH;
+        + PUBLIC_KEY_LENGTH
+        + 1; // one byte for the authority tag.
 }
 
 #[account]
@@ -672,8 +715,10 @@ pub enum ErrorCode {
     InvalidPDA,
     InvalidCanvasAuthority,
     InvalidMetadataAccount,
+    InvalidMint,
     InvalidMintSupply,
     InvalidMintAuthority,
     InvalidCollection,
+    InvalidCanvasAuthorityTag,
     FailedToTransfer,
 }
