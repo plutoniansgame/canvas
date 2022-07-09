@@ -106,6 +106,7 @@
 .logo {
   height: 1em;
   margin-left: 0.5rem;
+  font-weight: bold;
 }
 
 @media (max-width: 600px) {
