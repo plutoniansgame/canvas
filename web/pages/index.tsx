@@ -1,9 +1,23 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import type { NextPage } from "next";
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/Home.module.css";
+import { useState } from "react";
+import { CanvasSdkClient } from "../../sdk/src/index";
+import WalletButton from "../components/WalletButton/WalletButton";
+
+interface ICanvasData {
+  name: string | undefined;
+  slots?: [object];
+}
 
 const Home: NextPage = () => {
+  const [canvasData, setCanvasData] = useState<ICanvasData>({
+    name: "",
+  });
+
+  const createCanvas = () => {};
+
   return (
     <div className={styles.container}>
       <Head>
@@ -12,52 +26,69 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      <header>
+        <WalletButton />
+      </header>
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to NFT Canvas UI
-        </h1>
+        <h1 className={styles.title}>Welcome to NFT Canvas UI</h1>
 
         <p className={styles.description}>
-          <code className={styles.code}>Composable NFT&apos;s</code> for everyone 🤝
+          <code className={styles.code}>Composable NFT&apos;s</code> for
+          everyone 🤝
         </p>
+
+        <div>
+          <a href="https://nextjs.org/docs" className={styles.card}>
+            <h2>Create Canvas &rarr;</h2>
+            <p>Generate a new canvas model & slots</p>
+          </a>
+          <input value={canvasData.name} />
+          {/* <button onClick={createCanvas}>Create Canvas</button> */}
+        </div>
 
         <div className={styles.grid}>
           <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Placeholder &rarr;</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod.</p>
+            <h2>Create Canvas &rarr;</h2>
+            <p>Generate a new canvas model & slots</p>
           </a>
 
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Placeholder &rarr;</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod.</p>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod.
+            </p>
           </a>
 
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Placeholder &rarr;</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod.</p>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod.
+            </p>
           </a>
 
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Placeholder &rarr;</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod.</p>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod.
+            </p>
           </a>
         </div>
       </main>
 
       <footer className={styles.footer}>
         <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+          href="http://www.nftcanvas.dev"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
-          <span className={styles.logo}>
-            NFTCanvas
-          </span>
+          Powered by <span className={styles.logo}>NFTCanvas</span>
         </a>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
