@@ -5,6 +5,9 @@ import styles from "../styles/Home.module.css";
 import { useState } from "react";
 import { CanvasSdkClient } from "../../sdk/src/index";
 import WalletButton from "../components/WalletButton/WalletButton";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Wallet } from "@project-serum/anchor";
+import axios from "axios";
 
 interface ICanvasData {
   name: string | undefined;
@@ -12,11 +15,23 @@ interface ICanvasData {
 }
 
 const Home: NextPage = () => {
-  const [canvasData, setCanvasData] = useState<ICanvasData>({
-    name: "",
-  });
+  const { connection } = useConnection();
+  const wallet = useWallet();
 
-  const createCanvas = () => {};
+  const [canvasModelName, setCanvasModelName] = useState("");
+
+  const createCanvas = async (e) => {
+    if (!wallet) {
+      return false;
+    }
+    const response = await axios({
+      method: "post",
+      url: "/api/canvas",
+      data: {
+        canvasModelName,
+      },
+    });
+  };
 
   return (
     <div className={styles.container}>
@@ -37,13 +52,18 @@ const Home: NextPage = () => {
           everyone 🤝
         </p>
 
-        <div>
+        <div className={styles.grid}>
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Create Canvas &rarr;</h2>
             <p>Generate a new canvas model & slots</p>
           </a>
-          <input value={canvasData.name} />
-          {/* <button onClick={createCanvas}>Create Canvas</button> */}
+          <input
+            value={canvasModelName}
+            onChange={(e) => setCanvasModelName(e.target.value)}
+          />
+          <button onClick={createCanvas} type="button">
+            Create Canvas
+          </button>
         </div>
 
         <div className={styles.grid}>
