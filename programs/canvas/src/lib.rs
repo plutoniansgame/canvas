@@ -10,7 +10,7 @@ use constants::*;
 use error::ErrorCode;
 use program_accounts::*;
 
-declare_id!("BJCgYB56gxD9WsVaQanFoNByarTQm7qhsVLVKT6We8jn");
+declare_id!("HFMoqTFESpjK3QafQvn1V3iuwXAw9XK33y6SuprZjxBM");
 
 #[program]
 pub mod canvas {
@@ -24,9 +24,16 @@ pub mod canvas {
         name: String,
         bump: u8,
     ) -> Result<()> {
+        let mut canvas_name = name.clone();
         // TODO: The canvas model should be the Collection Authority.
-        if name.len() > NAME_LENGTH {
+        if canvas_name.len() > NAME_LENGTH {
             return Err(ErrorCode::NameTooLong.into());
+        }
+        if canvas_name.len() < NAME_LENGTH {
+            let length_adjustment: usize = NAME_LENGTH - name.len();
+            for _ in 0..length_adjustment {
+                canvas_name.push(0 as char);
+            }
         }
 
         let canvas_model = &mut ctx.accounts.canvas_model;
@@ -34,7 +41,7 @@ pub mod canvas {
         let creator = &ctx.accounts.creator;
 
         canvas_model.creator = creator.key();
-        canvas_model.name = name;
+        canvas_model.name = canvas_name;
         canvas_model.collection_mint = collection_mint.key();
         canvas_model.bump = bump;
         canvas_model.slot_count = 0;
