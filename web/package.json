@@ -9,7 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/styled": "^11.10.0",
     "@metaplex-foundation/mpl-token-metadata": "^2.2.2",
+    "@mui/material": "^5.9.3",
+    "@mui/styled-engine": "^5.8.7",
     "@project-serum/anchor": "^0.25.0",
     "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-react": "^0.15.8",

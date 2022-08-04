@@ -9,7 +9,6 @@ pub struct CanvasModel {
     pub collection_mint: Pubkey,
     pub slot_count: u8,
     pub bump: u8,
-    pub creators: Option<Vec<Pubkey>>,
 }
 
 impl CanvasModel {

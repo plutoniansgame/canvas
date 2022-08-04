@@ -12,6 +12,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Idl, Program, Wallet } from '@project-serum/anchor';
 import { createCreateMetadataAccountV2Instruction, PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import axios from "axios";
+import Link from "next/link";
 
 interface ICanvasData {
   name: string | undefined;
@@ -20,9 +21,7 @@ interface ICanvasData {
 
 const Home: NextPage = () => {
   const wallet = useWallet();
-  // const { connection } = useConnection();
-
-  const connection = new Connection(clusterApiUrl("devnet"));
+  const { connection } = useConnection();
   const programId = new PublicKey(idl.metadata.address);
   const provider = new AnchorProvider(
     connection, wallet as unknown as Wallet, { preflightCommitment: "processed" } as ConfirmOptions,
@@ -35,20 +34,24 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const getCanvasIds = async (): Promise<String[]> => {
-      const ids = connection.getProgramAccounts(programId, {
-        filters: [{
+      if (!wallet.publicKey) { return [""]; }
+
+      const canvasModels = await program.account.canvasModel.all([
+        {
           memcmp: {
             offset: 8,
             bytes: wallet.publicKey!.toBase58()
           }
-        }]
-      })
-      // const ids = await program.account.canvas.fetch   
+        }
+      ])
 
-      return [""]
+      console.log("test")
+      console.log(canvasModels);
+
+      return [""];
     };
     getCanvasIds().then(ids => setCanvasIds(ids));
-  });
+  }, [wallet?.publicKey]);
 
   const createCanvas = async (e: any) => {
     if (!wallet) {
@@ -62,104 +65,6 @@ const Home: NextPage = () => {
       },
     });
   };
-
-  const handleCreateCollectionNFTClick = async (e: any) => {
-
-    e.preventDefault();
-    e.stopPropagation();
-    if (!wallet) { return; }
-    if (!wallet.signTransaction) { return; }
-    if (!wallet.publicKey) { return };
-
-    const tx = new Transaction();
-    const mintKeypair = Keypair.generate();
-    const createAccountIx = SystemProgram.createAccount({
-      fromPubkey: wallet.publicKey,
-      lamports: await connection.getMinimumBalanceForRentExemption(MintLayout.span),
-      space: MintLayout.span,
-      newAccountPubkey: mintKeypair.publicKey,
-      programId: TOKEN_PROGRAM_ID
-    });
-    const initializeMintIx = Token.createInitMintInstruction(
-      TOKEN_PROGRAM_ID,
-      mintKeypair.publicKey,
-      0,
-      wallet.publicKey,
-      wallet.publicKey
-    );
-    const metadataAddress = PublicKey.findProgramAddressSync([
-      Buffer.from("metadata"),
-      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-      mintKeypair.publicKey.toBuffer()
-    ],
-      TOKEN_METADATA_PROGRAM_ID);
-
-    const createMetadataIx = createCreateMetadataAccountV2Instruction({
-      metadata: metadataAddress[0],
-      mint: mintKeypair.publicKey,
-      mintAuthority: wallet.publicKey,
-      payer: wallet.publicKey,
-      updateAuthority: wallet.publicKey
-    }, {
-      createMetadataAccountArgsV2: {
-        data: {
-          name: "MY COLLECTION NFT",
-          symbol: "MCN",
-          uri: "",
-          sellerFeeBasisPoints: 0,
-          creators: [{ address: wallet.publicKey, verified: false, share: 100 }],
-          collection: null,
-          uses: null
-        },
-        isMutable: false
-      }
-    });
-
-    tx.add(createAccountIx).add(initializeMintIx).add(createMetadataIx);
-
-    try {
-      const { blockhash } = await connection.getLatestBlockhash();
-      tx.recentBlockhash = blockhash;
-      tx.feePayer = wallet.publicKey;
-      tx.sign(mintKeypair);
-      await wallet.sendTransaction(tx, connection);
-      // pop success toast
-      setCollectionNFTAddress(mintKeypair.publicKey.toBase58());
-    } catch (e) {
-      console.log(e);
-      // pop failure toast
-    }
-
-  }
-
-  const handleCreateCanvasModelClick = async () => {
-    if (!wallet || !wallet.publicKey) { return; }
-    if (canvasModelName.length < 1) { return; }
-
-
-    const tx = new Transaction();
-    const collectionMintAddress = new PublicKey(collectionNFTAddress);
-
-    const canvasModelAddress = PublicKey.findProgramAddressSync([
-      Buffer.from("canvas_model"),
-      wallet.publicKey.toBuffer(),
-      Buffer.from(canvasModelName),
-      collectionMintAddress.toBuffer()
-    ], programId);
-
-    const createCanvasIx = await program.methods.createCanvasModel(canvasModelName, canvasModelAddress[1]).accounts({
-      canvasModel: canvasModelAddress[0],
-      creator: wallet.publicKey,
-      collectionMint: collectionMintAddress,
-      systemProgram: SystemProgram.programId
-    }).instruction();
-
-    tx.add(createCanvasIx);
-
-    const signature = await wallet.sendTransaction(tx, connection);
-    console.log(signature);
-
-  }
 
   return (
     <div className={styles.container}>
@@ -180,28 +85,17 @@ const Home: NextPage = () => {
           everyone 🤝
         </p>
 
-        {collectionNFTAddress ? <h2>Collection NFT Mint: <span >{collectionNFTAddress}</span></h2> : null}
         <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Create Collection NFT</h2>
-            <p>Generate a new canvas model & slots</p>
-            <button onClick={handleCreateCollectionNFTClick}>Create Collection NFT</button>
-          </a>
-          <input
-            value={canvasModelName}
-            onChange={(e) => setCanvasModelName(e.target.value)}
-          />
-          <button onClick={handleCreateCanvasModelClick} type="button">
-            Create Canvas
-          </button>
+          <Link href="/canvas-models" >
+            <a className={styles.card}>
+              <h2>Canvas Models</h2>
+              <p>Generate a new canvas model & slots</p>
+            </a>
+          </Link>
         </div>
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Create Canvas &rarr;</h2>
-            <p>Generate a new canvas model & slots</p>
-          </a>
 
+        <div className={styles.grid}>
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Placeholder &rarr;</h2>
             <p>

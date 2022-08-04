@@ -26,14 +26,10 @@ pub mod canvas {
     ) -> Result<()> {
         let mut canvas_name = name.clone();
         // TODO: The canvas model should be the Collection Authority.
+        // TODO: This will be caught by anchor because the name is used in the
+        //       account pda.... need to separate these.
         if canvas_name.len() > NAME_LENGTH {
             return Err(ErrorCode::NameTooLong.into());
-        }
-        if canvas_name.len() < NAME_LENGTH {
-            let length_adjustment: usize = NAME_LENGTH - name.len();
-            for _ in 0..length_adjustment {
-                canvas_name.push(0 as char);
-            }
         }
 
         let canvas_model = &mut ctx.accounts.canvas_model;

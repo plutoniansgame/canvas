@@ -9,14 +9,15 @@ import { ButtonContainer } from "./WalletButton.style";
 
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 
+export const shortenAddress = (address: string, chars = 4): string => {
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+};
+
 const WalletButton = (): JSX.Element => {
   // Get connected wallet
   const { publicKey } = useWallet();
 
   // Shorten address
-  const shortenAddress = (address: string, chars = 4): string => {
-    return `${address.slice(0, chars)}...${address.slice(-chars)}`;
-  };
 
   return (
     <WalletModalProvider>
