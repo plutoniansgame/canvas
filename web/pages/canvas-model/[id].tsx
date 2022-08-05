@@ -5,8 +5,10 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Stack, Typography, Button } from "@mui/material";
 import { useRouter } from "next/router";
 import { AnchorProvider, Idl, Program, Wallet } from '@project-serum/anchor';
+import { SlotForm, SlotFormState } from "../../components/SlotForm";
 import idl from "../../idl.json";
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { BN } from "bn.js";
 
 export const CanvasModelPage = () => {
     const router = useRouter();
@@ -17,21 +19,124 @@ export const CanvasModelPage = () => {
     const program = new Program(idl as Idl, programId, provider);
     const canvasModelAddress = new PublicKey(router.query.id as String);
     const [canvasModel, setCanvasModel] = useState<any>();
+    const [slots, setSlots] = useState<any[]>([]);
+    const [incrementor, setIncrementor] = useState<any>();
+    const [showSlotForm, setShowSlotForm] = useState(false);
 
-    const loadCanvasModel = async (address: PublicKey): Promise<any> => {
+    const loadCanvasModel = async (address: PublicKey): Promise<void> => {
         const canvasModel = await program.account.canvasModel.fetch(address);
         setCanvasModel(canvasModel);
-        return canvasModel;
+    }
+
+    const getIncrementorAddress = (wallet: any): [PublicKey, number] => {
+        return PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("incrementor"),
+                wallet.publicKey?.toBuffer(),
+                canvasModelAddress.toBuffer(),
+                Buffer.from("canvas_model_slot")
+            ],
+            programId
+        );
+    }
+
+    const loadIncrementor = async (): Promise<void> => {
+        if (!wallet.publicKey) { return }
+
+        const incrementorAddress = getIncrementorAddress(wallet);
+        const incrementor = await program.account.incrementor.fetchNullable(incrementorAddress[0]);
+        setIncrementor(incrementor);
+    }
+
+    const loadSlots = async (): Promise<void> => {
+        if (!wallet.publicKey) { return }
+
+        const slots = await program.account.canvasModelSlot.all([{
+            memcmp: {
+                offset: 8,
+                bytes: canvasModelAddress.toBase58()
+            }
+        }]);
+
+        setSlots(slots);
     }
 
     useEffect(() => {
-        loadCanvasModel(canvasModelAddress).then((m) => {
-            console.log({ m });
-        });
+        loadCanvasModel(canvasModelAddress);
+        loadIncrementor();
+        loadSlots();
     }, []);
 
     const handleAddSlotClick = () => {
-        console.log({ program })
+        setShowSlotForm(true);
+    }
+
+    const createSlot = async (name: String) => {
+        if (!wallet.publicKey) {
+            return;
+        }
+        const tx = new Transaction();
+        // find out if there is a slot incrementor
+        // if there is, query it for the next slot id
+        // if there is not, create one
+        const [slotIncrementorAddress, slotIncrementorBump] = PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("incrementor"),
+                wallet.publicKey?.toBuffer(),
+                canvasModelAddress.toBuffer(),
+                Buffer.from("canvas_model_slot")
+            ],
+            programId
+        );
+
+        const slotIncrementor = await program.account.incrementor.fetchNullable(slotIncrementorAddress);
+        console.log({ slotIncrementor })
+
+        let head: number = slotIncrementor?.head as number || 0;
+
+        if (!slotIncrementor) {
+            const createSlotIncrementorIx = await program.methods.createCanvasModelSlotIncrementor(slotIncrementorBump).accounts({
+                canvasModel: canvasModelAddress,
+                incrementor: slotIncrementorAddress,
+                systemProgram: SystemProgram.programId,
+                creator: wallet.publicKey
+            }).instruction();
+
+            tx.add(createSlotIncrementorIx);
+        }
+
+        const [canvasModelSlotAddress] = PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("canvas_model_slot"),
+                wallet.publicKey.toBuffer(),
+                canvasModelAddress.toBuffer(),
+                Buffer.from(name),
+                // usually BN has a toBuffer method, but it's not exported
+                // so we are using toArrayLike to convert to a buffer instead.
+                new BN(head + 1).toArrayLike(Buffer)
+            ], programId);
+
+        const createCanvasModelSlotIx = await program.methods
+            .createCanvasModelSlot(
+                name,
+                head + 1,
+                canvasModelSlotAddress
+            ).accounts({
+                canvasModel: canvasModelAddress,
+                canvasModelSlot: canvasModelSlotAddress,
+                incrementor: slotIncrementorAddress,
+                collectionMint: canvasModel.collectionMint,
+                systemProgram: SystemProgram.programId,
+            }).instruction();
+
+        tx.add(createCanvasModelSlotIx);
+
+        const sig = await wallet.sendTransaction(tx, connection);
+        console.log("sig", sig)
+    }
+
+    const handleSlotSubmit = async (data: SlotFormState) => {
+        await createSlot(data.name);
     }
 
     if (!canvasModel) {
@@ -41,7 +146,11 @@ export const CanvasModelPage = () => {
     return <Stack>
         <Typography variant="h1">{canvasModel.name}</Typography>
         <Typography variant="h6">{canvasModelAddress.toBase58()}</Typography>
-        <Button onClick={handleAddSlotClick}>Add Slot</Button>
+        {slots.map((slot: any) => {
+            return <Typography variant="h6">Slot {slot.account.index}: {slot.account.name}</Typography>
+        })}
+        {!showSlotForm && <Button onClick={handleAddSlotClick}>Add Slot</Button>}
+        {showSlotForm && <SlotForm onSubmit={handleSlotSubmit} />}
     </Stack>
 }
 

@@ -10,7 +10,7 @@ use constants::*;
 use error::ErrorCode;
 use program_accounts::*;
 
-declare_id!("HFMoqTFESpjK3QafQvn1V3iuwXAw9XK33y6SuprZjxBM");
+declare_id!("4Q5kBHTrYWgce8zWD9zDK5pcWE8jW7dUrqJuEWf21wkX");
 
 #[program]
 pub mod canvas {
@@ -24,7 +24,7 @@ pub mod canvas {
         name: String,
         bump: u8,
     ) -> Result<()> {
-        let mut canvas_name = name.clone();
+        let canvas_name = name.clone();
         // TODO: The canvas model should be the Collection Authority.
         // TODO: This will be caught by anchor because the name is used in the
         //       account pda.... need to separate these.
@@ -76,16 +76,10 @@ pub mod canvas {
 
     pub fn create_canvas_model_slot_incrementor(
         ctx: Context<CreateCanvasModelSlotIncrementor>,
-        id: String,
         bump: u8,
     ) -> Result<()> {
         let incrementor = &mut ctx.accounts.incrementor;
         let creator = &ctx.accounts.creator;
-        msg!(
-            "creating new incrementor for {:?} with id {:?}",
-            creator.key(),
-            id
-        );
 
         incrementor.head = 0;
         incrementor.bump = bump;

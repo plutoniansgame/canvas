@@ -198,7 +198,6 @@ describe("nft canvas", () => {
 
     const createCanvasModelSlotIncrementorIx = await program.methods
       .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
         canvasModelSlotIncrementorAddress[1],
       ).accounts({
         canvasModel: canvasModelAddress[0],
@@ -342,7 +341,6 @@ describe("nft canvas", () => {
 
     const createCanvasModelSlotIncrementorIx = await program.methods
       .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
         canvasModelSlotIncrementorAddress[1],
       ).accounts({
         canvasModel: canvasModelAddress[0],
@@ -551,7 +549,6 @@ describe("nft canvas", () => {
 
     const createCanvasModelSlotIncrementorIx = await program.methods
       .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
         canvasModelSlotIncrementorAddress[1],
       ).accounts({
         canvasModel: canvasModelAddress[0],
@@ -892,7 +889,6 @@ describe("nft canvas", () => {
 
     const createCanvasModelSlotIncrementorIx = await program.methods
       .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
         canvasModelSlotIncrementorAddress[1],
       ).accounts({
         canvasModel: canvasModelAddress[0],
@@ -1278,7 +1274,6 @@ describe("nft canvas", () => {
 
     const createCanvasModelSlotIncrementorIx = await program.methods
       .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
         canvasModelSlotIncrementorAddress[1],
       ).accounts({
         canvasModel: canvasModelAddress[0],

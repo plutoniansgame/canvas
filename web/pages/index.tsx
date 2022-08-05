@@ -20,52 +20,6 @@ interface ICanvasData {
 }
 
 const Home: NextPage = () => {
-  const wallet = useWallet();
-  const { connection } = useConnection();
-  const programId = new PublicKey(idl.metadata.address);
-  const provider = new AnchorProvider(
-    connection, wallet as unknown as Wallet, { preflightCommitment: "processed" } as ConfirmOptions,
-  );
-  const program = new Program(idl as Idl, programId, provider);
-
-  const [canvasModelName, setCanvasModelName] = useState("");
-  const [collectionNFTAddress, setCollectionNFTAddress] = useState("");
-  const [canvasIds, setCanvasIds] = useState<String[]>([]);
-
-  useEffect(() => {
-    const getCanvasIds = async (): Promise<String[]> => {
-      if (!wallet.publicKey) { return [""]; }
-
-      const canvasModels = await program.account.canvasModel.all([
-        {
-          memcmp: {
-            offset: 8,
-            bytes: wallet.publicKey!.toBase58()
-          }
-        }
-      ])
-
-      console.log("test")
-      console.log(canvasModels);
-
-      return [""];
-    };
-    getCanvasIds().then(ids => setCanvasIds(ids));
-  }, [wallet?.publicKey]);
-
-  const createCanvas = async (e: any) => {
-    if (!wallet) {
-      return false;
-    }
-    const response = await axios({
-      method: "post",
-      url: "/api/canvas",
-      data: {
-        canvasModelName,
-      },
-    });
-  };
-
   return (
     <div className={styles.container}>
       <Head>

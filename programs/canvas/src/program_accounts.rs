@@ -73,7 +73,6 @@ pub struct CreateCanvasModelSlot<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(id: String)]
 pub struct CreateCanvasModelSlotIncrementor<'info> {
     #[account(
         seeds = [
