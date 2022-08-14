@@ -18,7 +18,7 @@ export const transparent = "rgba(0, 0, 0, 0)";
 /* Colors */
 export const silver = "#DEE6FC";
 export const lightBlue = "#BECFFF";
-export const lime = "#7efe2f";
+export const lime = "#7DFF2E";
 
 export const banana = "FFF2D1";
 export const skyBlue = "#7993E2";
