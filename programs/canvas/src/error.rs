@@ -15,6 +15,5 @@ pub enum ErrorCode {
     InvalidMintSupply,
     InvalidMintAuthority,
     InvalidCollection,
-    InvalidCanvasAuthorityTag,
     FailedToTransfer,
 }
