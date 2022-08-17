@@ -22,6 +22,10 @@ import Link from "next/link";
 import styles from "../styles/Home.module.css";
 import idl from "../idl.json";
 import Layout from "components/layout/layout";
+import { canvasModelButtonStyles } from "./canvas-models.css";
+import StarImage from "assets/star.png";
+import Image from "next/image";
+
 const CanvasModelsPage = () => {
   const wallet = useWallet();
   const { connection } = useConnection();
@@ -219,8 +223,13 @@ const CanvasModelsPage = () => {
           </Button>
         )}
         {!showCanvasModelForm && (
-          <Button onClick={() => setShowCanvasModelForm(true)}>
-            New Canvas Model
+          <Button
+            onClick={() => setShowCanvasModelForm(true)}
+            css={canvasModelButtonStyles}
+          >
+            <span>Create</span>
+            <Image src={StarImage} alt="logo" />
+            <span> Model</span>
           </Button>
         )}
         {showCanvasModelForm && (

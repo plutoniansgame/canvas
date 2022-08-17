@@ -54,6 +54,7 @@ export const columnOneMainStyles = css`
 
 export const columnTwoMainStyles = css`
   display: flex;
+  margin-left: 80px;
   justify-content: center;
   border-right: 2px solid ${colors.almostBlack};
   span,
