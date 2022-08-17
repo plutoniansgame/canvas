@@ -198,7 +198,6 @@ const CanvasModelsPage = () => {
   return (
     <Layout>
       <Stack direction={"column"}>
-        <Typography variant={"h1"}>Canvas Models</Typography>
         {canvasModels.map((model) => (
           <Stack key={model.publicKey}>
             <Link href={`/canvas-model/${model.publicKey.toBase58()}`}>

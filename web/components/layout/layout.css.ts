@@ -8,8 +8,9 @@ export const headerStyles = css`
   display: flex;
 `;
 
-export const columnOneStyles = css`
+export const columnOneHeaderStyles = css`
   width: 116px;
+  min-width: 116px;
   display: flex;
   justify-content: center;
   border-right: 2px solid ${colors.almostBlack};
@@ -20,7 +21,7 @@ export const columnOneStyles = css`
   }
 `;
 
-export const columnTwoStyles = css`
+export const columnTwoHeaderStyles = css`
   display: flex;
   width: 100%;
   padding-left: 80px;
@@ -30,5 +31,34 @@ export const columnTwoStyles = css`
   h1 {
     font-weight: 400;
     font-size: 40px;
+  }
+`;
+
+export const mainStyles = css`
+  display: flex;
+  height: 100%;
+`;
+
+export const columnOneMainStyles = css`
+  width: 116px;
+  display: flex;
+  justify-content: center;
+  border-right: 2px solid ${colors.redOrange};
+  height: 100%;
+  span,
+  image {
+    align-self: center;
+    flex-shrink: 0;
+  }
+`;
+
+export const columnTwoMainStyles = css`
+  display: flex;
+  justify-content: center;
+  border-right: 2px solid ${colors.almostBlack};
+  span,
+  image {
+    align-self: center;
+    flex-shrink: 0;
   }
 `;
