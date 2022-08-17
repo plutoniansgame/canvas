@@ -4,6 +4,7 @@
 
 /* Monochromes */
 export const black = "#000000";
+export const almostBlack = "#1E1E1E";
 export const darkestGray = "#333333";
 export const darkGray = "#6A7480";
 export const mediumGray = "#8B95A6";
@@ -19,6 +20,7 @@ export const transparent = "rgba(0, 0, 0, 0)";
 export const silver = "#DEE6FC";
 export const lightBlue = "#BECFFF";
 export const lime = "#7DFF2E";
+export const redOrange = "#FA6107";
 
 export const banana = "FFF2D1";
 export const skyBlue = "#7993E2";
