@@ -9,6 +9,9 @@ import { SlotForm, SlotFormState } from "../../components/SlotForm";
 import idl from "../../idl.json";
 import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { BN } from "bn.js";
+import { isNFT } from "../../isNFT";
+import { TOKEN_PROGRAM_ID, AccountLayout } from '@solana/spl-token';
+import { MintLayout } from '@solana/spl-token';
 
 export const CanvasModelPage = () => {
     const router = useRouter();
@@ -65,10 +68,34 @@ export const CanvasModelPage = () => {
         loadCanvasModel(canvasModelAddress);
         loadIncrementor();
         loadSlots();
-    }, []);
+        findNFTs();
+
+    }, [wallet.publicKey]);
 
     const handleAddSlotClick = () => {
         setShowSlotForm(true);
+    }
+
+    const findNFTs = async () => {
+        const nfts = [];
+
+        if (!wallet.publicKey) {
+            return;
+        }
+        const tokenAccounts = await connection.getTokenAccountsByOwner(wallet.publicKey, { programId: TOKEN_PROGRAM_ID });
+        const tokenMints = [];
+        for (const tokenAccountData of tokenAccounts.value) {
+            const tokenAccount = AccountLayout.decode(tokenAccountData.account.data);
+            tokenMints.push(new PublicKey(tokenAccount.mint));
+        }
+
+        for (const mintAddress of tokenMints) {
+            const result = await isNFT(mintAddress, true, connection);
+            console.log({ result })
+        }
+
+
+
     }
 
     const createSlot = async (name: String) => {
@@ -90,8 +117,6 @@ export const CanvasModelPage = () => {
         );
 
         const slotIncrementor = await program.account.incrementor.fetchNullable(slotIncrementorAddress);
-        console.log({ slotIncrementor })
-
         let head: number = slotIncrementor?.head as number || 0;
 
         if (!slotIncrementor) {
@@ -114,7 +139,9 @@ export const CanvasModelPage = () => {
                 // usually BN has a toBuffer method, but it's not exported
                 // so we are using toArrayLike to convert to a buffer instead.
                 new BN(head + 1).toArrayLike(Buffer)
-            ], programId);
+            ],
+            programId
+        );
 
         const createCanvasModelSlotIx = await program.methods
             .createCanvasModelSlot(
@@ -136,6 +163,7 @@ export const CanvasModelPage = () => {
     }
 
     const handleSlotSubmit = async (data: SlotFormState) => {
+        setShowSlotForm(false);
         await createSlot(data.name);
     }
 
