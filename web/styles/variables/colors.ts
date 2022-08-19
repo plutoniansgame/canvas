@@ -4,6 +4,7 @@
 
 /* Monochromes */
 export const black = "#000000";
+export const almostBlack = "#1E1E1E";
 export const darkestGray = "#333333";
 export const darkGray = "#6A7480";
 export const mediumGray = "#8B95A6";
@@ -12,13 +13,14 @@ export const lightGray = "#D7D7D7";
 export const lighterGray = "#EBECF0";
 export const lightestGray = "#F0F2F5";
 export const offWhite = "#F9FAFC";
-export const white = "FFFFFF";
+export const white = "#FFFFFF";
 export const transparent = "rgba(0, 0, 0, 0)";
 
 /* Colors */
 export const silver = "#DEE6FC";
 export const lightBlue = "#BECFFF";
-export const lime = "#7efe2f";
+export const lime = "#7DFF2E";
+export const redOrange = "#FA6107";
 
 export const banana = "FFF2D1";
 export const skyBlue = "#7993E2";

@@ -21,7 +21,9 @@ const WalletButton = (): JSX.Element => {
 
   return (
     <WalletModalProvider>
-      <ButtonContainer className={`${publicKey ? "connected" : ""}`}>
+      <ButtonContainer
+        className={`${publicKey ? "connected" : ""} wallet-button`}
+      >
         {/* <button className={`${publicKey ? "connected" : ""}`} disabled></button> */}
 
         {publicKey ? (
