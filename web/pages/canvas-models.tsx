@@ -201,7 +201,7 @@ const CanvasModelsPage = () => {
 
   return (
     <Layout>
-      <Stack direction={"column"}>
+      <Stack direction={"row"} spacing={2}>
         {canvasModels.map((model) => (
           <Stack key={model.publicKey}>
             <Link href={`/canvas-model/${model.publicKey.toBase58()}`}>
@@ -218,8 +218,13 @@ const CanvasModelsPage = () => {
           <Typography>{collectionNFTAddress}</Typography>
         )}
         {!showCanvasModelForm && (
-          <Button onClick={handleCreateCollectionNFTClick}>
-            Create Collection NFT
+          <Button
+            onClick={handleCreateCollectionNFTClick}
+            css={canvasModelButtonStyles}
+          >
+            <span>Create</span>
+            <Image src={StarImage} alt="logo" />
+            <span> Collection</span>
           </Button>
         )}
         {!showCanvasModelForm && (

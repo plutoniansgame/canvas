@@ -13,7 +13,7 @@ export const lightGray = "#D7D7D7";
 export const lighterGray = "#EBECF0";
 export const lightestGray = "#F0F2F5";
 export const offWhite = "#F9FAFC";
-export const white = "FFFFFF";
+export const white = "#FFFFFF";
 export const transparent = "rgba(0, 0, 0, 0)";
 
 /* Colors */
