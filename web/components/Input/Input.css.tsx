@@ -27,7 +27,8 @@ export const InputStyles = ({
   background-color: ${colors.almostBlack};
   height: 100%;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 100;
+  letter-spacing: 3px;
   box-sizing: border-box;
   border: none;
   border-bottom: 2px solid ${colors.redOrange};
@@ -46,8 +47,7 @@ export const InputStyles = ({
     outline: 0;
   }
   &::placeholder {
-    color: #000;
-    opacity: 0;
+    color: ${colors.redOrange};
   }
   &:disabled {
     background-color: ${colors.almostBlack};

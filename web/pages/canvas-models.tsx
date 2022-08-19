@@ -17,7 +17,7 @@ import { Button, Stack, Typography } from "@mui/material";
 import {
   CanvasModelForm,
   CanvasModelFormState,
-} from "../components/CanvasModelForm";
+} from "components/CanvasModelForm/CanvasModelForm";
 import Link from "next/link";
 import styles from "../styles/Home.module.css";
 import idl from "../idl.json";
