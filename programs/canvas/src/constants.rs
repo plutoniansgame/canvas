@@ -7,5 +7,5 @@ pub const OPTION_LENGTH: usize = 1;
 
 // This could be an enum but right now
 // borsh does not support enum (de)serialization
-pub const CREATOR_AUTHORITY_TAG: u8 = 0;
+pub const USER_AUTHORITY_TAG: u8 = 0;
 pub const MINT_AUTHORITY_TAG: u8 = 1;

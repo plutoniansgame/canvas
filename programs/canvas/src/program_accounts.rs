@@ -279,6 +279,15 @@ pub struct CommitMint<'info> {
 
 #[derive(Accounts)]
 pub struct BurnTokenAndClaimCanvasAuthority<'info> {
+    pub authority: Signer<'info>,
+    pub canvas_model: Account<'info, CanvasModel>,
+    pub canvas: Account<'info, Canvas>,
+    /// The NFT that was minted via the commit_mint method.
+    pub mint: Account<'info, Mint>,
+    /// The metadata account for the mint.
+    /// CHECK: The metadata account is deserialized in the method.
+    pub metadata: UncheckedAccount<'info>,
+    pub token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }

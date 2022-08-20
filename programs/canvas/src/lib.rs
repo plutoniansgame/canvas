@@ -4,7 +4,6 @@ mod program_accounts;
 mod state_accounts;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token;
 
 use constants::*;
 use error::ErrorCode;
@@ -14,6 +13,7 @@ declare_id!("4Q5kBHTrYWgce8zWD9zDK5pcWE8jW7dUrqJuEWf21wkX");
 
 #[program]
 pub mod canvas {
+    use anchor_spl::token;
     use mpl_token_metadata::state::Metadata;
     use spl_token::instruction::AuthorityType;
 
@@ -117,7 +117,7 @@ pub mod canvas {
         let creator = &ctx.accounts.creator;
 
         canvas.authority = creator.key();
-        canvas.authority_tag = CREATOR_AUTHORITY_TAG;
+        canvas.authority_tag = USER_AUTHORITY_TAG;
         canvas.canvas_model = canvas_model.key();
         canvas.creator = creator.key();
         canvas.name = name;
@@ -195,7 +195,7 @@ pub mod canvas {
         ]];
 
         match canvas.authority_tag {
-            CREATOR_AUTHORITY_TAG => {}
+            USER_AUTHORITY_TAG => {}
             MINT_AUTHORITY_TAG => {
                 let associated_mint_pubkey = canvas
                     .associated_mint
@@ -226,7 +226,7 @@ pub mod canvas {
                     return Err(ErrorCode::InvalidMintSupply.into());
                 }
             }
-            _ => return Err(ErrorCode::InvalidCanvasAuthorityTag.into()),
+            _ => return Err(ErrorCode::InvalidCanvasAuthority.into()),
         }
 
         let cpi_context = CpiContext::new_with_signer(
@@ -243,21 +243,73 @@ pub mod canvas {
     }
 
     pub fn burn_token_and_claim_canvas_authority(
-        _ctx: Context<BurnTokenAndClaimCanvasAuthority>,
+        ctx: Context<BurnTokenAndClaimCanvasAuthority>,
     ) -> Result<()> {
+        let authority = &ctx.accounts.authority;
+        let canvas_model = &ctx.accounts.canvas_model;
+        let canvas = &mut ctx.accounts.canvas;
+        let mint = &ctx.accounts.mint;
+        let token_account = &ctx.accounts.token_account;
+        let unchecked_metadata = &ctx.accounts.metadata;
+        let token_program = &ctx.accounts.token_program;
         // authenticate the token holder:
         // make sure the canvas authority type is mint.
+        if canvas.authority_tag.ne(&MINT_AUTHORITY_TAG) {
+            return Err(ErrorCode::InvalidCanvasAuthority.into());
+        }
         // make sure the mint exists.
         // make sure the mint has no mint authority
+        if mint.mint_authority.is_some() {
+            return Err(ErrorCode::InvalidMint.into());
+        }
         // make sure they have a token account for the mint
         // make sure the token account holds one token
+        if token_account.amount.ne(&1) {
+            return Err(ErrorCode::InvalidUserTokenAccountBalance.into());
+        }
         // make sure the signer has authority over the token account
         // make sure the nft metadata says the nft belongs to the canvas' collection_mint.
+        let metadata = Metadata::from_account_info(&unchecked_metadata.to_account_info())
+            .or_else(|_| Err(ErrorCode::InvalidMetadataAccount))?;
+
+        if let None = metadata.collection {
+            return Err(ErrorCode::InvalidCollection.into());
+        }
+
+        let metadata_collection = metadata.collection.unwrap();
+        if !metadata_collection.verified
+            || metadata_collection.key.ne(&canvas_model.collection_mint)
+        {
+            return Err(ErrorCode::InvalidCollection.into());
+        }
 
         // burn the token
+        let cpi_context = CpiContext::new(
+            token_program.to_account_info(),
+            token::Burn {
+                mint: mint.to_account_info(),
+                from: token_account.to_account_info(),
+                authority: authority.to_account_info(),
+            },
+        );
+
+        token::burn(cpi_context, 1)?;
+
         // close the associated token account
+        let cpi_context_2 = CpiContext::new(
+            token_program.to_account_info(),
+            token::CloseAccount {
+                account: token_account.to_account_info(),
+                destination: authority.to_account_info(),
+                authority: authority.to_account_info(),
+            },
+        );
+
+        token::close_account(cpi_context_2)?;
         // change the authority type to user
         // change the authority to the user
+        canvas.authority_tag = USER_AUTHORITY_TAG;
+        canvas.authority = authority.key();
 
         Ok(())
     }
@@ -267,11 +319,11 @@ pub mod canvas {
         let canvas_model = &ctx.accounts.canvas_model;
         let creator_token_account = &ctx.accounts.creator_token_account;
         let mint = &ctx.accounts.mint;
-        let metadata_account = &ctx.accounts.metadata_account;
+        let unchecked_metadata = &ctx.accounts.metadata_account;
         let token_program = &ctx.accounts.token_program;
 
         // metadata account should deserialize.
-        let metadata = Metadata::from_account_info(&metadata_account.to_account_info())
+        let metadata = Metadata::from_account_info(&unchecked_metadata.to_account_info())
             .or_else(|_| Err(ErrorCode::InvalidMetadataAccount))?;
         // collection sould match the collection specified during the creation of the CanvasModel account.
         let collection = metadata.collection.ok_or(ErrorCode::InvalidCollection)?;
