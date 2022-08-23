@@ -9,7 +9,7 @@ use constants::*;
 use error::ErrorCode;
 use program_accounts::*;
 
-declare_id!("BJCgYB56gxD9WsVaQanFoNByarTQm7qhsVLVKT6We8jn");
+declare_id!("4Q5kBHTrYWgce8zWD9zDK5pcWE8jW7dUrqJuEWf21wkX");
 
 #[program]
 pub mod canvas {
@@ -24,8 +24,11 @@ pub mod canvas {
         name: String,
         bump: u8,
     ) -> Result<()> {
+        let canvas_name = name.clone();
         // TODO: The canvas model should be the Collection Authority.
-        if name.len() > NAME_LENGTH {
+        // TODO: This will be caught by anchor because the name is used in the
+        //       account pda.... need to separate these.
+        if canvas_name.len() > NAME_LENGTH {
             return Err(ErrorCode::NameTooLong.into());
         }
 
@@ -34,7 +37,7 @@ pub mod canvas {
         let creator = &ctx.accounts.creator;
 
         canvas_model.creator = creator.key();
-        canvas_model.name = name;
+        canvas_model.name = canvas_name;
         canvas_model.collection_mint = collection_mint.key();
         canvas_model.bump = bump;
         canvas_model.slot_count = 0;
@@ -73,16 +76,10 @@ pub mod canvas {
 
     pub fn create_canvas_model_slot_incrementor(
         ctx: Context<CreateCanvasModelSlotIncrementor>,
-        id: String,
         bump: u8,
     ) -> Result<()> {
         let incrementor = &mut ctx.accounts.incrementor;
         let creator = &ctx.accounts.creator;
-        msg!(
-            "creating new incrementor for {:?} with id {:?}",
-            creator.key(),
-            id
-        );
 
         incrementor.head = 0;
         incrementor.bump = bump;

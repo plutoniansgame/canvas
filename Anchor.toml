@@ -1,9 +1,9 @@
 [features]
 seeds = false
 [programs.localnet]
-canvas = "BJCgYB56gxD9WsVaQanFoNByarTQm7qhsVLVKT6We8jn"
+canvas = "HFMoqTFESpjK3QafQvn1V3iuwXAw9XK33y6SuprZjxBM"
 [programs.devnet]
-canvas = "BJCgYB56gxD9WsVaQanFoNByarTQm7qhsVLVKT6We8jn"
+canvas = "4Q5kBHTrYWgce8zWD9zDK5pcWE8jW7dUrqJuEWf21wkX"
 
 [registry]
 url = "https://anchor.projectserum.com"

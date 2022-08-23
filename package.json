@@ -3,7 +3,8 @@
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
         "build:sdk": "cd sdk && yarn build",
-        "clean": "rm -rf dist"
+        "clean": "rm -rf dist",
+        "copy-idl": "node scripts/copyIdl.js"
     },
     "dependencies": {
         "@metaplex-foundation/mpl-token-metadata": "^2.1.1",
