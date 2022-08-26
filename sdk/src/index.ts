@@ -138,7 +138,6 @@ export class CanvasSdkClient {
 
     const createCanvasModelSlotIncrementorIx = await this.program.methods
       .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
         canvasModelSlotIncrementorAddress[1]
       )
       .accounts({
