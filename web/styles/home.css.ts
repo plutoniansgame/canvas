@@ -1,10 +1,10 @@
-import { css } from "@emotion/react";
-import { colors } from "./variables";
+import { css } from '@emotion/react'
+import { colors } from './variables'
 
 export const homeBaseStyles = css`
   background-color: #1e1e1e;
   color: #fff;
-`;
+`
 
 export const headerStyles = css`
   background-color: ${colors.lime};
@@ -12,7 +12,7 @@ export const headerStyles = css`
     font-size: 200px;
     color: #000;
   }
-`;
+`
 
 export const mainStyles = css`
   display: flex;
@@ -31,7 +31,7 @@ export const mainStyles = css`
       color: ${colors.lime};
     }
   }
-`;
+`
 
 export const menuStyles = css`
   display: flex;
@@ -46,4 +46,4 @@ export const menuStyles = css`
       color: #000;
     }
   }
-`;
+`

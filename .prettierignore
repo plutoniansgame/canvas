@@ -1,6 +1,7 @@
 
 .anchor
 .DS_Store
+.next
 target
 node_modules
 dist
