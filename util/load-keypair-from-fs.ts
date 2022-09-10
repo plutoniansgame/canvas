@@ -5,7 +5,7 @@ export const loadKeyPairFromFs = (path: String) =>
       JSON.parse(
         require("fs").readFileSync(path, {
           encoding: "utf-8",
-        }),
-      ),
-    ),
+        })
+      )
+    )
   );

@@ -9,16 +9,19 @@ import { BN } from "bn.js";
 export const isNFT = async (
   address: PublicKey,
   allowMintAuthority = false,
-  connection: Connection,
+  connection: Connection
 ) => {
   // get the mint layout
   // if the circulating supply is 1, then it is an NFT
   // if the mint authority is null, then it is an NFT
-  const [metadataAddress] = PublicKey.findProgramAddressSync([
-    Buffer.from("metadata"),
-    address.toBuffer(),
-    TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-  ], TOKEN_METADATA_PROGRAM_ID);
+  const [metadataAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("metadata"),
+      address.toBuffer(),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+    ],
+    TOKEN_METADATA_PROGRAM_ID
+  );
   const metadataAccountInfo = await connection.getAccountInfo(metadataAddress);
 
   if (!metadataAccountInfo) {
