@@ -1,12 +1,12 @@
-import { css } from '@emotion/react'
-import { colors } from 'styles/variables'
+import { css } from '@emotion/react';
+import { colors } from 'styles/variables';
 
 export const headerStyles = css`
   background: ${colors.redOrange};
   height: 116px;
   width: 100%;
   display: flex;
-`
+`;
 
 export const columnOneHeaderStyles = css`
   width: 116px;
@@ -19,7 +19,7 @@ export const columnOneHeaderStyles = css`
     align-self: center;
     flex-shrink: 0;
   }
-`
+`;
 
 export const columnTwoHeaderStyles = css`
   display: flex;
@@ -32,12 +32,12 @@ export const columnTwoHeaderStyles = css`
     font-weight: 400;
     font-size: 40px;
   }
-`
+`;
 
 export const mainStyles = css`
   display: flex;
   height: 100%;
-`
+`;
 
 export const columnOneMainStyles = css`
   width: 116px;
@@ -50,7 +50,7 @@ export const columnOneMainStyles = css`
     align-self: center;
     flex-shrink: 0;
   }
-`
+`;
 
 export const columnTwoMainStyles = css`
   display: flex;
@@ -62,4 +62,4 @@ export const columnTwoMainStyles = css`
     align-self: center;
     flex-shrink: 0;
   }
-`
+`;

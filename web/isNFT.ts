@@ -1,10 +1,10 @@
-import { Connection, PublicKey } from '@solana/web3.js'
-import { MintLayout } from '@solana/spl-token'
+import { Connection, PublicKey } from '@solana/web3.js';
+import { MintLayout } from '@solana/spl-token';
 import {
   Metadata,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
-} from '@metaplex-foundation/mpl-token-metadata'
-import { BN } from 'bn.js'
+} from '@metaplex-foundation/mpl-token-metadata';
+import { BN } from 'bn.js';
 
 export const isNFT = async (
   address: PublicKey,
@@ -21,33 +21,33 @@ export const isNFT = async (
       TOKEN_METADATA_PROGRAM_ID.toBuffer(),
     ],
     TOKEN_METADATA_PROGRAM_ID
-  )
-  const metadataAccountInfo = await connection.getAccountInfo(metadataAddress)
+  );
+  const metadataAccountInfo = await connection.getAccountInfo(metadataAddress);
 
   if (!metadataAccountInfo) {
-    console.log('metadata not found')
-    return false
+    console.log('metadata not found');
+    return false;
   }
 
-  const metadata = Metadata.fromAccountInfo(metadataAccountInfo)
-  const mintAccountInfo = await connection.getAccountInfo(address)
+  const metadata = Metadata.fromAccountInfo(metadataAccountInfo);
+  const mintAccountInfo = await connection.getAccountInfo(address);
 
   if (!mintAccountInfo) {
-    console.log('mint account not found')
-    return false
+    console.log('mint account not found');
+    return false;
   }
 
-  const mint = MintLayout.decode(mintAccountInfo.data)
+  const mint = MintLayout.decode(mintAccountInfo.data);
 
   if (!mint.supply.eq(new BN(1))) {
-    console.log('mint supply is not 1')
-    return false
+    console.log('mint supply is not 1');
+    return false;
   }
 
   if (!allowMintAuthority && mint.mintAuthority) {
-    console.log('mint authority is not null')
-    return false
+    console.log('mint authority is not null');
+    return false;
   }
 
-  return metadata
-}
+  return metadata;
+};

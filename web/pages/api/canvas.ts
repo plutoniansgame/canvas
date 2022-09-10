@@ -1,5 +1,5 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next';
 const {
   PublicKey,
   Keypair,
@@ -7,9 +7,9 @@ const {
   Transaction,
   Connection,
   clusterApiUrl,
-} = require('@solana/web3.js')
+} = require('@solana/web3.js');
 
-import { CanvasSdkClient } from '../../../sdk/src/index'
+import { CanvasSdkClient } from '../../../sdk/src/index';
 
 const loadKeyPairFromFs = (path: string) =>
   Keypair.fromSecretKey(
@@ -20,23 +20,23 @@ const loadKeyPairFromFs = (path: string) =>
         })
       )
     )
-  )
-const keyPath = `${__dirname}/../../../dev_keys`
+  );
+const keyPath = `${__dirname}/../../../dev_keys`;
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const keyPath = `${__dirname}/../../../dev_keys`
+  const keyPath = `${__dirname}/../../../dev_keys`;
 
-  const connection = new Connection(clusterApiUrl('devnet'))
-  const adminKeypair = loadKeyPairFromFs(`${keyPath}/admin.json`)
-  const recipientKeypair = loadKeyPairFromFs(`${keyPath}/recipient.json`)
+  const connection = new Connection(clusterApiUrl('devnet'));
+  const adminKeypair = loadKeyPairFromFs(`${keyPath}/admin.json`);
+  const recipientKeypair = loadKeyPairFromFs(`${keyPath}/recipient.json`);
   const nftCanvas = new CanvasSdkClient({
     wallet: recipientKeypair,
     connection,
-  })
+  });
 
   const response = nftCanvas.createNftCanvas({
     canvasModelName: req.body.canvasModelName,
-  })
+  });
 
-  res.status(200).json(response)
+  res.status(200).json(response);
 }

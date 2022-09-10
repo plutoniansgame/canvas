@@ -1,5 +1,5 @@
-import { css } from '@emotion/react'
-import { colors } from 'styles/variables'
+import { css } from '@emotion/react';
+import { colors } from 'styles/variables';
 
 export const canvasModelButtonStyles = css`
   width: 184px;
@@ -23,4 +23,4 @@ export const canvasModelButtonStyles = css`
     letter-spacing: 4px;
     text-transform: uppercase;
   }
-`
+`;
