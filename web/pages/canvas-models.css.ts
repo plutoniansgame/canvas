@@ -1,5 +1,5 @@
-import { css } from "@emotion/react";
-import { colors } from "styles/variables";
+import { css } from '@emotion/react';
+import { colors } from 'styles/variables';
 
 export const canvasModelButtonStyles = css`
   width: 184px;
@@ -11,7 +11,7 @@ export const canvasModelButtonStyles = css`
   border: 1.5px solid ${colors.redOrange};
 
   span {
-    font-family: "IBM Plex Mono";
+    font-family: 'IBM Plex Mono';
     font-style: normal;
     font-weight: 700;
     font-size: 18px;

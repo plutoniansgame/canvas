@@ -1,10 +1,6 @@
-import * as anchor from "@project-serum/anchor";
-import { Wallet } from "@project-serum/anchor";
-import {
-  MintLayout,
-  TOKEN_PROGRAM_ID,
-  Token,
-} from "@solana/spl-token";
+import * as anchor from '@project-serum/anchor';
+import { Wallet } from '@project-serum/anchor';
+import { MintLayout, TOKEN_PROGRAM_ID, Token } from '@solana/spl-token';
 import {
   Transaction,
   Keypair,
@@ -12,8 +8,8 @@ import {
   Connection,
   PublicKey,
   TransactionInstruction,
-} from "@solana/web3.js";
-import { Canvas } from "../../target/types/canvas";
+} from '@solana/web3.js';
+import { Canvas } from '../../target/types/canvas';
 
 /**
  * @TODO parameterize all functions, remove test values
@@ -93,10 +89,10 @@ export class CanvasSdkClient {
   }) {
     return PublicKey.findProgramAddress(
       [
-        Buffer.from("incrementor"),
+        Buffer.from('incrementor'),
         this.wallet.publicKey.toBuffer(),
         canvasModelAddress.toBuffer(),
-        Buffer.from("canvas_model_slot"),
+        Buffer.from('canvas_model_slot'),
       ],
       this.program.programId
     );
@@ -111,7 +107,7 @@ export class CanvasSdkClient {
   }) {
     return PublicKey.findProgramAddress(
       [
-        Buffer.from("canvas_model"),
+        Buffer.from('canvas_model'),
         this.wallet.publicKey.toBuffer(),
         Buffer.from(canvasModelName),
         collectionMint.toBuffer(),
@@ -137,10 +133,7 @@ export class CanvasSdkClient {
     });
 
     const createCanvasModelSlotIncrementorIx = await this.program.methods
-      .createCanvasModelSlotIncrementor(
-        "canvas_model_slot",
-        canvasModelSlotIncrementorAddress[1]
-      )
+      .createCanvasModelSlotIncrementor(canvasModelSlotIncrementorAddress[1])
       .accounts({
         canvasModel: canvasModelAddress[0],
         incrementor: canvasModelSlotIncrementorAddress[0],
@@ -168,7 +161,7 @@ export class CanvasSdkClient {
   }) {
     return await PublicKey.findProgramAddress(
       [
-        Buffer.from("canvas_model_slot"),
+        Buffer.from('canvas_model_slot'),
         this.wallet.publicKey.toBuffer(),
         canvasModelAddress.toBuffer(),
         Buffer.from(slotName),

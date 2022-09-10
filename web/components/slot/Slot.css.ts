@@ -1,5 +1,5 @@
-import { css } from "@emotion/react";
+import { css } from '@emotion/react';
 
 export const Slot = css`
-  font-family: "Roboto", sans-serif !important;
+  font-family: 'Roboto', sans-serif !important;
 `;

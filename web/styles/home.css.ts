@@ -1,5 +1,5 @@
-import { css } from "@emotion/react";
-import { colors } from "./variables";
+import { css } from '@emotion/react';
+import { colors } from './variables';
 
 export const homeBaseStyles = css`
   background-color: #1e1e1e;
