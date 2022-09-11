@@ -98,9 +98,13 @@ export class CanvasSdkClient {
 
     ixs.push(createCanvasModelIx);
 
+    const tx = new Transaction().add(...ixs);
+
     return {
       instructions: ixs,
       transaction: new Transaction().add(...ixs),
+      execute: (options?: anchor.web3.SendOptions) =>
+        this.connection.sendRawTransaction(tx.serialize(), options),
     };
   }
 
@@ -151,11 +155,13 @@ export class CanvasSdkClient {
       })
       .instruction();
 
+    const tx = new Transaction().add(...[createCanvasModelSlotIncrementorIx]);
+
     return {
-      transaction: new Transaction().add(
-        ...[createCanvasModelSlotIncrementorIx]
-      ),
+      transaction: tx,
       instructions: [createCanvasModelSlotIncrementorIx],
+      execute: (options?: anchor.web3.SendOptions) =>
+        this.connection.sendRawTransaction(tx.serialize(), options),
     };
   }
 
@@ -208,10 +214,13 @@ export class CanvasSdkClient {
         systemProgram: SystemProgram.programId,
       })
       .instruction();
+    const tx = new Transaction().add(...[createSlotIx]);
 
     return {
       instructions: [createSlotIx],
-      transactions: new Transaction().add(...[createSlotIx]),
+      transaction: tx,
+      execute: (options?: anchor.web3.SendOptions) =>
+        this.connection.sendRawTransaction(tx.serialize(), options),
     };
   }
 
@@ -233,10 +242,12 @@ export class CanvasSdkClient {
         systemProgram: SystemProgram.programId,
       })
       .instruction();
-
+    const tx = new Transaction().add(...[createCanvasModelIx]);
     return {
       instructions: [createCanvasModelIx],
       transaction: new Transaction().add(...[createCanvasModelIx]),
+      execute: (options?: anchor.web3.SendOptions) =>
+        this.connection.sendRawTransaction(tx.serialize(), options),
     };
   }
 
@@ -275,6 +286,13 @@ export class CanvasSdkClient {
       })
     ).instructions;
 
+    const tx = new Transaction().add(
+      createAccountInstruction,
+      createMintIx,
+      ...createCanvasModelIx,
+      ...createCanvasModelSlotIncrementorIx
+    );
+
     return {
       instructions: [
         createAccountInstruction,
@@ -282,12 +300,9 @@ export class CanvasSdkClient {
         ...createCanvasModelIx,
         ...createCanvasModelSlotIncrementorIx,
       ],
-      transaction: new Transaction().add(
-        createAccountInstruction,
-        createMintIx,
-        ...createCanvasModelIx,
-        ...createCanvasModelSlotIncrementorIx
-      ),
+      transaction: tx,
+      execute: (options?: anchor.web3.SendOptions) =>
+        this.connection.sendRawTransaction(tx.serialize(), options),
     };
   }
 
